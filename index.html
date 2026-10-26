@@ -1,0 +1,1110 @@
+<!DOCTYPE html><html lang="ko"><head>
+    <meta charset="UTF-8">
+    <title>아이디어 블럭 커넥터 v79</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Malgun Gothic', sans-serif; background: #fdfbf0; }
+        .floating-ui { position: absolute; z-index: 150; user-select: none; }
+        
+        #help-container { top: 15px; left: 15px; z-index: 500; }
+        #help-icon { font-size: 24px; cursor: pointer; background: rgba(255, 255, 255, 0.3); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #e0dcc5; filter: grayscale(100%); }
+        
+        #toolbar { 
+            display: none; 
+            position: absolute;
+            z-index: 3000;
+            width: 360px; 
+            background: rgba(255, 255, 255, 0.98); 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25); 
+            border: 1px solid #e0dcc5; 
+            margin-top: 10px; 
+            max-height: 85vh; 
+            overflow-y: auto; 
+        }
+        #toolbar::-webkit-scrollbar { width: 6px; }
+        #toolbar::-webkit-scrollbar-thumb { background: #e0dcc5; border-radius: 3px; }
+        #close-help { float: right; cursor: pointer; font-weight: bold; color: #888; }
+
+        #save-menu { top: 15px; right: 15px; z-index: 150; }
+        .disk-btn { font-size: 28px; cursor: pointer; background: rgba(255, 255, 255, 0.3); padding: 10px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.2s; filter: grayscale(100%); display: flex; align-items: center; justify-content: center; width: 35px; height: 35px; }
+        .disk-btn:hover { transform: scale(1.1); }
+        .dropdown { display: none; position: absolute; top: 60px; right: 0; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); min-width: 170px; overflow: hidden; border: 1px solid #eee; }
+        .dropdown div { padding: 12px 20px; cursor: pointer; font-size: 14px; font-weight: bold; color: #4a483e; border-bottom: 1px solid #f5f5f5; }
+        .dropdown div:hover { background: #f8f9fa; color: #2196f3; }
+
+        #image-menu { top: 50%; left: 15px; transform: translateY(-110%); z-index: 100; }
+        #image-icon { font-size: 22px; cursor: pointer; background: rgba(255, 255, 255, 0.3); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #e0dcc5; color: #7e7b64; filter: grayscale(100%); }
+
+        #marker-menu { top: 50%; right: 15px; transform: translateY(-50%); text-align: center; z-index: 100; }
+        #marker-icon { font-size: 22px; cursor: pointer; background: rgba(255, 255, 255, 0.3); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #e0dcc5; color: #7e7b64; filter: grayscale(100%); }
+        #marker-palette { display: none; position: absolute; right: 65px; top: 50%; transform: translateY(-50%); background: white; padding: 15px; border-radius: 12px; box-shadow: 0 6px 25px rgba(0,0,0,0.15); border: 1px solid #e0dcc5; width: 200px; }
+        #num-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 15px; }
+        .num-item { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: #f9f8f0; border-radius: 50%; cursor: pointer; font-size: 13px; font-weight: bold; color: #5d5b4a; border: 1px solid #eee; }
+        .num-item.active { background: #2196f3; color: white; border-color: #2196f3; }
+        .num-nav { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f0f0f0; padding-top: 10px; }
+        .nav-btn { cursor: pointer; font-size: 16px; padding: 5px 10px; color: #888; font-weight: bold; }
+
+        #bg-settings-container { bottom: 15px; left: 15px; z-index: 100; }
+        #brush-icon { font-size: 24px; cursor: pointer; background: rgba(255, 255, 255, 0.3); width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #e0dcc5; filter: grayscale(100%); }
+        #bg-panel { display: none; width: 220px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); border: 1px solid #eee; margin-bottom: 10px; }
+        .btn-apply { width: 100%; padding: 8px; background: #4a483e; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-bottom: 5px; }
+        .btn-reset { width: 100%; padding: 8px; background: #f5f5f5; color: #666; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; font-size: 11px; }
+
+        /* 다중 페이지(시트) 관리 메뉴 CSS */
+        #page-menu-container { bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 200; }
+        #page-icon { font-size: 22px; cursor: pointer; background: rgba(255, 255, 255, 0.3); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #e0dcc5; color: #7e7b64; filter: grayscale(100%); transition: transform 0.2s; }
+        #page-icon:hover { transform: scale(1.1); }
+        #page-popup { display: none; position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); width: max-content; min-width: 420px; max-width: 80vw; background: rgba(255, 255, 255, 0.98); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); border: 1px solid #e0dcc5; overflow: hidden; padding-bottom: 5px; }
+        .page-popup-header { background: #f9f8f0; padding: 12px 15px; font-weight: bold; color: #4a483e; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .page-list { max-height: 250px; overflow-y: auto; }
+        .page-list::-webkit-scrollbar { width: 6px; }
+        .page-list::-webkit-scrollbar-thumb { background: #e0dcc5; border-radius: 3px; }
+        .page-item { padding: 4px 15px; border-bottom: 1px solid #f5f5f5; cursor: default; font-size: 13px; color: #555; display: flex; align-items: center; justify-content: space-between; transition: background 0.2s; }
+        .page-item:hover { background: #f0f8ff; }
+        .page-item-title { flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 15px; }
+        .page-add-btn { padding: 12px; text-align: center; cursor: pointer; color: #2196f3; font-weight: bold; font-size: 14px; background: white; margin: 8px; border: 1px dashed #2196f3; border-radius: 6px; transition: background 0.2s; }
+        .page-add-btn:hover { background: #e3f2fd; }
+        .action-btn { cursor: pointer; font-size: 12px; font-weight: bold; padding: 4px; border-radius: 4px; transition: background 0.2s; }
+        .action-del { color: #d32f2f; }
+        .action-open { color: #888; }
+        .action-swap { color: #4caf50; }
+        .action-btn:hover { text-decoration: underline; background: rgba(0,0,0,0.05); }
+
+        /* 모달 및 토스트 메시지 UI */
+        #recent-file-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 5000; justify-content: center; align-items: center; }
+        .recent-box { background: white; padding: 25px; border-radius: 12px; width: 350px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .recent-btn { padding: 10px 15px; margin: 10px 5px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; width: 100%; box-sizing: border-box; }
+        .btn-blue { background: #2196f3; color: white; }
+        .btn-gray { background: #f5f5f5; color: #555; border: 1px solid #ddd; }
+        #toast-msg { display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(33, 150, 243, 0.9); color: white; padding: 12px 24px; border-radius: 30px; z-index: 6000; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+
+        canvas { display: block; cursor: crosshair; }
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 4000; justify-content: center; align-items: center; }
+        #modal { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 440px; transition: transform 0.2s ease-in-out; }
+        .format-toolbar { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; }
+        .format-btn { padding: 4px 10px; border: 1px solid #ddd; background: #f9f9f9; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .format-btn:hover { background: #eee; }
+        #modal textarea { width: 100%; height: 160px; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none; resize: none; font-family: inherit; line-height: 1.5; }
+        #modal select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; outline: none; }
+        #zoom-info { position: absolute; bottom: 15px; right: 20px; background: rgba(0,0,0,0.5); color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; }
+    </style></head><body oncontextmenu="return false;"><div id="help-container" class="floating-ui">
+    <div id="help-icon" onclick="toggleHelp()">?</div>
+    <div id="toolbar">
+        <span id="close-help" onclick="toggleHelp()">×</span>
+        <h4 style="margin:0 0 12px 0; color:#4a483e; font-size: 18px; border-bottom: 2px solid #e0dcc5; padding-bottom: 5px;">User Guide</h4>
+        <div style="font-size: 11px; color: #7e7b64; line-height: 1.6;">
+            <b>[입력창 편집]</b><br>
+- 창 활성화 : 마우스 왼쪽 더블클릭 또는 Shift+Enter
+<br>
+- 창 타입 선택 : 모달 내 
+<b>Ctrl + 키보드 상하(↑↓)</b><br>
+- 텍스트 서식 : 드래그 선택 후 
+<b>Ctrl+B, I, U</b><br>
+- 특정 색변경 : 드래그 선택 후 🎨 아이콘 (7색 지원)
+<br>
+- 서식 취소 : 입력창 내에서 
+<b>Ctrl+Z</b><br>
+- 서식 선택해제 : 
+<b>Esc</b> (선택 없을 땐 창닫기)<br>
+- 창 적용 : Shift+Enter
+<br><br>
+            
+            <b>[블럭 기능]</b> (선택 후)<br>
+- 글자색 변경 : 키보드 좌우(←→)
+<br>
+- 글자크기 변경 : 글자 위에서 마우스 휠 조정
+<br>
+- 배경 투명도 변경 : 키보드 상하(↑↓)
+<br>
+- 블럭 크기 변경 : 구석 핸들 드래그 (단방향 고정)
+<br>
+- 블럭 위치 변경 : 드래그 (다중 선택 시 함께 이동)
+<br>
+- 특정 영역 빗금 표시 : Ctrl + 마우스 왼쪽 드래그
+<br>
+- 특정 영역 색 바꾸기 : 선택 후 키보드 좌우(←→)
+<br><br>
+            
+            <b>[화살표 기능]</b><br>
+- 생성 : 블럭/이미지/영역 위에서 
+<b>Shift+Drag</b><br>
+- 위치 변경 : 선택 후 끝 부분 핸들 드래그
+<br>
+- 화살표 색 변경 : 선택 후 키보드 좌우(←→)
+<br>
+- 화살표 방향 변경 : 선택 후 키보드 상하(↑↓)
+<br>
+- 화살표 굴곡 방향 : 선택 후 
+<b>Ctrl + 키보드 상하(↑↓)</b><br><br>
+            
+            <b>[화면 조정 & 저장]</b><br>
+- 확대 축소 : 마우스 휠 / 화면 이동 : 우클릭 드래그
+<br>
+- 모든 블럭 한 화면에 담기 : Ctrl + E
+<br>
+- 다중 선택 : Ctrl + 좌클릭 (객체 추가/해제)
+<br>
+- 다른 탭으로 복사 : 선택 후 
+<b>Ctrl+C</b> / 다른 탭에서 <b>Ctrl+V</b><br>
+- 덮어쓰기 저장 : 우상단 💾 아이콘 또는 
+<b>Ctrl+Shift+S</b><br>
+- 파일 불러오기 : 메뉴 클릭 또는 
+<b>Ctrl+O</b>
+        </div>
+    </div></div><div id="save-menu" class="floating-ui">
+    <div class="disk-btn" id="main-disk-btn" onclick="toggleDropdown()">💾</div>
+    <div class="dropdown" id="disk-dropdown">
+        <div onclick="saveProject()">저장하기 (덮어쓰기)</div>
+        <div onclick="exportProject()">새파일로 저장</div>
+        <div onclick="startNewSheet()" style="color: #2196f3; font-weight: 800;">새로운 시트로 시작 (+보관)</div>
+        <div onclick="showOpenModal()">프로젝트 불러오기</div>
+        <div onclick="saveAsImage()">이미지로 내보내기 (JPEG)</div>
+    </div>
+    <input type="file" id="file-input" style="display:none" onchange="importProject(event)"></div><div id="image-menu" class="floating-ui">
+    <div id="image-icon" onclick="toggleImageDropdown()">🖼️</div>
+    <div class="dropdown" id="image-dropdown" style="top: 0; left: 55px; right: auto; min-width: 190px;">
+        <div onclick="triggerImageUpload('cropped')">줄여서 삽입하기</div>
+        <div onclick="triggerImageUpload('original')">원래 사이즈로 삽입하기</div>
+    </div>
+    <input type="file" id="image-upload" style="display:none" accept="image/*" onchange="handleImageUpload(event)"></div><div id="marker-menu" class="floating-ui">
+    <div id="marker-icon" onclick="toggleMarkerPalette()">🔢</div>
+    <div id="marker-palette">
+        <div id="num-grid"></div>
+        <div class="num-nav">
+            <span class="nav-btn" onclick="changeMarkerPage(-1)">◀</span>
+            <span id="marker-page-info" style="font-size:11px; color:#aaa;">PAGE 1 / 2</span>
+            <span class="nav-btn" onclick="changeMarkerPage(1)">▶</span>
+        </div>
+    </div></div><div id="bg-settings-container" class="floating-ui">
+    <div id="bg-panel">
+        <div style="margin-bottom:12px;"><label style="display:block; font-size:12px; font-weight:bold; margin-bottom:5px; color:#666;">배경 색상</label><input type="color" id="bg-color-picker" value="#fdfbf0" style="width:100%; height:30px; border:none; padding:0;"></div>
+        <div style="margin-bottom:12px;"><label style="font-size:12px;"><input type="checkbox" id="grid-toggle" checked> 격자 무늬 표시</label></div>
+        <button class="btn-apply" onclick="applyBgSettings()">설정 적용</button>
+        <button class="btn-reset" onclick="resetDefaultSettings()">초기 설정으로 복원</button>
+    </div>
+    <div id="brush-icon" onclick="toggleBgPanel()">🖌️</div></div><!-- 다중 페이지(시트) 관리 메뉴 UI --><div id="page-menu-container" class="floating-ui">
+    <div id="page-popup">
+        <div class="page-popup-header">
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span>페이지 목록</span>
+                <span class="action-btn" id="sort-btn" onclick="toggleSortPages(event)" style="font-weight:normal; color:#888; background:#eee; padding:3px 8px;" title="이름순으로 번갈아 정렬합니다">이름순 ▲</span>
+            </div>
+            <span style="font-size:12px; font-weight:normal; color:#888;">(총 <span id="page-count">0</span>장)</span>
+        </div>
+        <div class="page-list" id="page-list-container">
+            <!-- 페이지 항목 렌더링 영역 -->
+        </div>
+        <div class="page-add-btn" onclick="triggerSubpageUpload(event)">+ 페이지 추가 (다중 선택 가능)</div>
+    </div>
+    <div id="page-icon" onclick="togglePagePopup()" title="여러 페이지 관리">📑</div>
+    <input type="file" id="subpage-upload" multiple accept=".html" style="display:none" onchange="handleSubpageUpload(event)"></div><!-- 최근 파일 열기 모달 --><div id="recent-file-modal">
+    <div class="recent-box">
+        <h3 style="margin-top:0; color:#4a483e;">프로젝트 불러오기</h3>
+        <p style="font-size:13px; color:#666; margin-bottom:5px;">최근 작업 파일:</p>
+        <div id="recent-filename" style="font-weight:bold; color:#2196f3; margin-bottom:20px; word-break:break-all;">없음</div>
+        <button class="recent-btn btn-blue" id="btn-load-recent" onclick="loadRecentFile()">이 파일 바로 열기</button>
+        <button class="recent-btn btn-gray" onclick="triggerNativeOpen()">다른 위치에서 열기 (탐색기)</button>
+        <div style="margin-top:15px;"><span onclick="closeOpenModal()" style="cursor:pointer; color:#999; font-size:12px; text-decoration:underline;">취소</span></div>
+    </div></div><!-- 토스트 알림 메시지 --><div id="toast-msg"></div><div id="zoom-info">100%</div><canvas id="canvas"></canvas><div id="modal-overlay">
+    <div id="modal">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 id="modal-title" style="margin:0; font-size:18px; color:#4a483e;">아이디어 구성</h3>
+            <div>
+                <span style="font-size:11px; color:#888; margin-right:5px; font-weight:bold;">입력창 확대</span>
+                <button onclick="zoomModal(-0.1)" style="cursor:pointer; border:1px solid #ddd; background:#f9f9f9; border-radius:4px; padding:2px 8px; font-weight:bold; font-size:14px;">-</button>
+                <button onclick="zoomModal(0.1)" style="cursor:pointer; border:1px solid #ddd; background:#f9f9f9; border-radius:4px; padding:2px 8px; font-weight:bold; font-size:14px;">+</button>
+            </div>
+        </div>
+        
+        <div class="format-toolbar" style="position:relative;">
+            <button class="format-btn" onclick="applyFormat('**')" title="굵게 (Ctrl+B)">B</button>
+            <button class="format-btn" onclick="applyFormat('*')" title="기울임 (Ctrl+I)" style="font-style: italic;">I</button>
+            <button class="format-btn" onclick="applyFormat('__')" title="밑줄 (Ctrl+U)" style="text-decoration: underline;">U</button>
+            
+            <div style="position:relative; display:inline-block;">
+                <button class="format-btn" onclick="toggleColorPalette(event)" title="글자색 변경" style="margin-left:2px;">🎨</button>
+                <div id="color-palette" style="display: none; position: absolute; top: 30px; left: 0px; background: white; border: 1px solid #ddd; padding: 6px; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 5000; gap: 5px; flex-wrap: wrap; width: 110px;">
+                    <div onclick="applyColorFormat('#d32f2f')" style="width:20px; height:20px; background:#d32f2f; cursor:pointer; border-radius:3px;" title="빨강"></div>
+                    <div onclick="applyColorFormat('#f57c00')" style="width:20px; height:20px; background:#f57c00; cursor:pointer; border-radius:3px;" title="주황"></div>
+                    <div onclick="applyColorFormat('#fbc02d')" style="width:20px; height:20px; background:#fbc02d; cursor:pointer; border-radius:3px;" title="노랑"></div>
+                    <div onclick="applyColorFormat('#388e3c')" style="width:20px; height:20px; background:#388e3c; cursor:pointer; border-radius:3px;" title="초록"></div>
+                    <div onclick="applyColorFormat('#1976d2')" style="width:20px; height:20px; background:#1976d2; cursor:pointer; border-radius:3px;" title="파랑"></div>
+                    <div onclick="applyColorFormat('#303f9f')" style="width:20px; height:20px; background:#303f9f; cursor:pointer; border-radius:3px;" title="남색"></div>
+                    <div onclick="applyColorFormat('#7b1fa2')" style="width:20px; height:20px; background:#7b1fa2; cursor:pointer; border-radius:3px;" title="보라"></div>
+                </div>
+            </div>
+
+            <span style="display:inline-block; width:1px; height:15px; background:#ddd; margin:0 8px;"></span>
+            
+            <button class="format-btn align-btn" id="btn-align-left" onclick="setAlign('left')" title="왼쪽 정렬">좌</button>
+            <button class="format-btn align-btn" id="btn-align-center" onclick="setAlign('center')" title="가운데 정렬">중</button>
+            <button class="format-btn align-btn" id="btn-align-right" onclick="setAlign('right')" title="오른쪽 정렬">우</button>
+        </div>
+        
+        <textarea id="node-input" placeholder="내용을 입력하세요 (Shift+Enter: 확정)"></textarea>
+        <div style="font-size: 11px; color: #2196f3; margin-bottom: 5px; font-weight: bold;">
+- Ctrl + 키보드 위아래(↑↓) 키로 블록 형태를 바꿀 수 있습니다.
+        </div>
+        <select id="node-type">
+            <option value="1">1단계: 사각형 블록</option>
+            <option value="2">2단계: 밑줄 스타일</option>
+            <option value="3">3단계: 해시태그 스타일</option>
+            <option value="4">4단계: 투명 텍스트</option>
+        </select>
+        <div style="display:flex; gap:10px;">
+            <button onclick="closeModal(true)" style="flex:1; padding:12px; background:#4a483e; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">확정 (Shift+Enter)</button>
+            <button onclick="closeModal(false)" style="flex:1; padding:12px; border:1px solid #ddd; border-radius:6px; cursor:pointer;">취소</button>
+        </div>
+    </div></div><script>
+    /*DATA_HOLDER*/
+    let projectId = "id_" + Date.now();
+    let currentSheetName = "메인 작업";
+    let nodes = [];
+    let edges = [];
+    let bgSettings = { color: "#fdfbf0", showGrid: true, modalZoom: 1.0 };
+    let safeSubPages = [];
+    /*DATA_END*/
+
+    let subPages = []; 
+    let isUploadingPages = false; 
+    let pageSortAsc = true; 
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const nodeInput = document.getElementById('node-input');
+    const nodeTypeSelect = document.getElementById('node-type');
+    const zoomInfo = document.getElementById('zoom-info');
+
+    let selectedNodes = [], selectedEdge = null, draggingNodes = [], resizingNode = null, resizeHandle = null; 
+    let draggingEdgeHandle = null, connectingNode = null, isPanning = false, isSelecting = false, isCreatingArea = false;
+    let currentOffset = { x: 0, y: 0 }, targetOffset = { x: 0, y: 0 }, currentScale = 1.0, targetScale = 1.0;
+    let lastMousePos = { x: 0, y: 0 }, dragStartPos = { x: 0, y: 0 }, currentWorldMouse = { x: 0, y: 0 };
+    let selectionRect = { x1: 0, y1: 0, x2: 0, y2: 0 };
+    let isChangingColor = false, copyBuffer = null, pendingPos = {x: 0, y: 0}, editingNode = null;
+    let historyStack = [], redoStack = [];
+    
+    let activeMarkerValue = null, markerCurrentPage = 1;
+    let activeImageData = null, activeImageDimensions = null, imageCache = new Map();
+    let imageInsertMode = 'cropped';
+    let currentTextAlign = "center";
+    
+    let selectionTimeout = null;
+    let currentFileHandle = null; 
+    const DB_NAME = "IdeaBlockDB";
+    let hasUnsavedChanges = false;
+
+    function generateId() { return 'n_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9); }
+
+    function encodeSubpageContent(str) { return btoa(encodeURIComponent(str)); }
+    function decodeSubpageContent(b64) { return decodeURIComponent(atob(b64)); }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast-msg');
+        t.innerText = msg;
+        t.style.display = 'block';
+        setTimeout(() => { t.style.display = 'none'; }, 2500);
+    }
+
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = e => {
+                if (!e.target.result.objectStoreNames.contains("handles")) {
+                    e.target.result.createObjectStore("handles");
+                }
+            };
+            req.onsuccess = e => resolve(e.target.result);
+            req.onerror = e => reject(e);
+        });
+    }
+
+    async function saveHandleToDB(id, handle) {
+        try {
+            const db = await openDB();
+            db.transaction("handles", "readwrite").objectStore("handles").put(handle, id);
+        } catch (e) { console.warn("DB Save Error:", e); }
+    }
+
+    async function getHandleFromDB(id) {
+        try {
+            const db = await openDB();
+            return await new Promise((res, rej) => {
+                const req = db.transaction("handles", "readonly").objectStore("handles").get(id);
+                req.onsuccess = () => res(req.result);
+                req.onerror = () => res(null);
+            });
+        } catch (e) { return null; }
+    }
+
+    async function getVerifiedHandle() {
+        if (currentFileHandle) return currentFileHandle;
+        if (!projectId) return null;
+        const savedHandle = await getHandleFromDB(projectId);
+        if (savedHandle) {
+            try {
+                if ((await savedHandle.queryPermission({ mode: 'readwrite' })) === 'granted') { return savedHandle; }
+                if ((await savedHandle.requestPermission({ mode: 'readwrite' })) === 'granted') { return savedHandle; }
+            } catch(e) { console.warn("Permission verify failed:", e); }
+        }
+        return null;
+    }
+
+    const LERP_FACTOR = 0.35, GRID_SIZE = 40, HANDLE_SIZE = 10, COLORS = ['#2c2b25', '#d32f2f', '#1976d2', '#388e3c']; 
+    const WORLD_W_FACTOR = 7, WORLD_H_FACTOR = 7;
+
+    function init() {
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+        targetOffset.x = currentOffset.x = window.innerWidth / 2;
+        targetOffset.y = currentOffset.y = window.innerHeight / 2;
+        
+        if (!projectId) projectId = "id_" + Date.now(); 
+        
+        if (typeof safeSubPages !== 'undefined' && safeSubPages.length > 0) {
+            try {
+                subPages = safeSubPages.map(p => ({ name: p.name, htmlContent: decodeSubpageContent(p.data) }));
+                sortSubPages(); 
+            } catch (e) { console.error("서브페이지 로드 실패", e); }
+        }
+
+        if (nodes.length > 0) {
+            applyState({ nodes, edges });
+        }
+
+        updateMarkerGrid();
+        animate();
+    }
+
+    function zoomModal(delta) { bgSettings.modalZoom = Math.max(0.7, Math.min((bgSettings.modalZoom || 1.0) + delta, 2.5)); applyModalZoom(); }
+    function applyModalZoom() { document.getElementById('modal').style.transform = `scale(${bgSettings.modalZoom || 1.0})`; }
+    function setAlign(align) { currentTextAlign = align; document.querySelectorAll('.align-btn').forEach(b => b.style.backgroundColor = '#f9f9f9'); document.getElementById('btn-align-' + align).style.backgroundColor = '#d0e8ff'; document.getElementById('node-input').focus(); }
+    function toggleColorPalette(e) { e.stopPropagation(); const p = document.getElementById('color-palette'); p.style.display = p.style.display === 'none' || p.style.display === '' ? 'flex' : 'none'; }
+    function resetSelectionTimeout() { clearTimeout(selectionTimeout); selectionTimeout = setTimeout(() => { if (modalOverlay.style.display === 'flex' && nodeInput.selectionStart !== nodeInput.selectionEnd) { nodeInput.setSelectionRange(nodeInput.selectionEnd, nodeInput.selectionEnd); } }, 5000); }
+    function applyFormat(tag) { const s = nodeInput.selectionStart, e = nodeInput.selectionEnd, v = nodeInput.value; const replacement = tag + v.substring(s, e) + tag; nodeInput.focus(); nodeInput.setSelectionRange(s, e); if (!document.execCommand('insertText', false, replacement)) { nodeInput.value = v.substring(0, s) + replacement + v.substring(e); } nodeInput.setSelectionRange(s, s + replacement.length); resetSelectionTimeout(); }
+    function applyColorFormat(color) { const s = nodeInput.selectionStart, e = nodeInput.selectionEnd, v = nodeInput.value; if (s === e) return; const replacement = `[c:${color}]` + v.substring(s, e) + `[/c]`; nodeInput.focus(); nodeInput.setSelectionRange(s, e); if (!document.execCommand('insertText', false, replacement)) { nodeInput.value = v.substring(0, s) + replacement + v.substring(e); } document.getElementById('color-palette').style.display = 'none'; nodeInput.setSelectionRange(s, s + replacement.length); resetSelectionTimeout(); }
+    function toggleImageDropdown() { const d = document.getElementById('image-dropdown'); d.style.display = (d.style.display === 'block') ? 'none' : 'block'; }
+    function triggerImageUpload(mode) { imageInsertMode = mode; document.getElementById('image-upload').click(); document.getElementById('image-dropdown').style.display = 'none'; }
+    
+    function handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const tempCanvas = document.createElement('canvas'); const tCtx = tempCanvas.getContext('2d'); let targetW, targetH;
+                if (imageInsertMode === 'cropped') { tempCanvas.width = 200; tempCanvas.height = 200; const size = Math.min(img.width, img.height); tCtx.drawImage(img, (img.width - size)/2, (img.height - size)/2, size, size, 0, 0, 200, 200); targetW = 200; targetH = 200; } 
+                else { tempCanvas.width = img.width; tempCanvas.height = img.height; tCtx.drawImage(img, 0, 0, img.width, img.height); targetW = img.width; targetH = img.height; }
+                activeImageData = tempCanvas.toDataURL('image/jpeg', 0.7); activeImageDimensions = { w: targetW, h: targetH };
+                const ghostImg = new Image(); ghostImg.src = activeImageData; imageCache.set(activeImageData, ghostImg);
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file); e.target.value = '';
+    }
+
+    function extractDataBlock(htmlContent) {
+        const startToken = "/*DATA_HOLDER*/";
+        const endToken = "/*DATA_END*/";
+        const sIdx = htmlContent.indexOf(startToken);
+        const eIdx = htmlContent.indexOf(endToken, sIdx);
+        if (sIdx === -1 || eIdx === -1) return null;
+        
+        const inner = htmlContent.substring(sIdx + startToken.length, eIdx);
+        let state = { projectId: "", currentSheetName: "메인 작업", nodes: [], edges: [], bgSettings: {}, subPages: [] };
+        
+        try {
+            const pMatch = inner.match(/let projectId = "(.*?)";/);
+            if (pMatch) state.projectId = pMatch[1];
+            
+            const nMatch = inner.match(/let currentSheetName = "(.*?)";/);
+            if (nMatch) state.currentSheetName = nMatch[1];
+            
+            const parseVar = (varName, nextVarName) => {
+                const startStr = `let ${varName} = `;
+                const endStr = nextVarName ? `\n    let ${nextVarName}` : null;
+                const i1 = inner.indexOf(startStr);
+                if (i1 === -1) return null;
+                let i2 = endStr ? inner.indexOf(endStr, i1) : inner.lastIndexOf(';');
+                if (i2 === -1) i2 = inner.lastIndexOf(';');
+                const val = inner.substring(i1 + startStr.length, i2).trim();
+                try { return JSON.parse(val.replace(/;$/, '')); } catch(e) { return null; }
+            };
+            
+            state.nodes = parseVar('nodes', 'edges') || [];
+            state.edges = parseVar('edges', 'bgSettings') || [];
+            state.bgSettings = parseVar('bgSettings', 'subPages') || parseVar('bgSettings', 'safeSubPages') || { color: "#fdfbf0", showGrid: true, modalZoom: 1.0 };
+            
+            const sMatch = inner.match(/let safeSubPages = (\[[\s\S]*?\]);/);
+            if (sMatch) {
+                try {
+                    const parsed = JSON.parse(sMatch[1]);
+                    state.subPages = parsed.map(p => ({ name: p.name, htmlContent: decodeSubpageContent(p.data) }));
+                } catch(e) { console.error("서브페이지 파싱 에러(Base64)"); }
+            } else {
+                const oldMatch = inner.match(/let subPages = (\[[\s\S]*?\]);/);
+                if (oldMatch) { try { state.subPages = JSON.parse(oldMatch[1]); } catch(e) {} }
+            }
+        } catch(e) { console.error("Data Extraction Error:", e); }
+        
+        return state;
+    }
+
+    function upgradeHtmlToBaseVersion(uploadedHtml) {
+        const state = extractDataBlock(uploadedHtml);
+        if (!state) return uploadedHtml;
+        
+        const safeArr = state.subPages.map(p => ({ name: p.name, data: encodeSubpageContent(p.htmlContent) }));
+        const cName = state.currentSheetName || "메인 작업";
+        const newDataStr = `/*DATA_HOLDER*/\n    let projectId = "${state.projectId}";\n    let currentSheetName = "${cName}";\n    let nodes = ${JSON.stringify(state.nodes)};\n    let edges = ${JSON.stringify(state.edges)};\n    let bgSettings = ${JSON.stringify(state.bgSettings)};\n    let safeSubPages = ${JSON.stringify(safeArr)};\n    /*DATA_END*/`;
+        
+        const pp = document.getElementById('page-popup'); const wasPopupOpen = pp.style.display; pp.style.display = 'none';
+        const baseHtml = document.documentElement.outerHTML; pp.style.display = wasPopupOpen;
+
+        const sIdx = baseHtml.indexOf("/*DATA_HOLDER*/"); const eIdx = baseHtml.indexOf("/*DATA_END*/", sIdx);
+        if (sIdx !== -1 && eIdx !== -1) { return baseHtml.substring(0, sIdx) + newDataStr + baseHtml.substring(eIdx + 12); }
+        return baseHtml;
+    }
+
+    // [개선] 빈 목록일 때와 파일이 있을 때의 제안 이름 분기 처리
+    function startNewSheet() {
+        let defaultName = currentSheetName;
+        if (subPages && subPages.length > 0) {
+            defaultName = subPages[subPages.length - 1].name + " 복사본";
+        }
+
+        const name = prompt("현재 작업 화면을 목록에 보관하고 새 화면을 엽니다.\n\n보관할 이름을 입력하세요 (취소 시 보관 및 초기화 중단):", defaultName);
+        if (name === null) return; 
+
+        document.getElementById('disk-dropdown').style.display = 'none';
+        const finalName = name.trim() || defaultName; // 미입력 시 제안된 이름 사용
+        const state = captureState(); 
+        
+        const dataStr = `/*DATA_HOLDER*/\n    let projectId = "${projectId}";\n    let currentSheetName = "${finalName}";\n    let nodes = ${JSON.stringify(state.nodes)};\n    let edges = ${JSON.stringify(state.edges)};\n    let bgSettings = ${JSON.stringify(bgSettings)};\n    let safeSubPages = [];\n    /*DATA_END*/`;
+        
+        const baseHtml = document.documentElement.outerHTML;
+        const sIdx = baseHtml.indexOf("/*DATA_HOLDER*/");
+        const eIdx = baseHtml.indexOf("/*DATA_END*/", sIdx);
+        let cleanHtml = baseHtml;
+        if (sIdx !== -1 && eIdx !== -1) { 
+            cleanHtml = baseHtml.substring(0, sIdx) + dataStr + baseHtml.substring(eIdx + 12); 
+        }
+
+        subPages.push({ name: finalName, htmlContent: cleanHtml });
+        sortSubPages();
+
+        nodes = [];
+        edges = [];
+        selectedNodes = [];
+        selectedEdge = null;
+        historyStack = [];
+        redoStack = [];
+        
+        targetOffset.x = currentOffset.x = window.innerWidth / 2;
+        targetOffset.y = currentOffset.y = window.innerHeight / 2;
+        targetScale = currentScale = 1.0;
+        hasUnsavedChanges = true;
+        
+        currentSheetName = "새 작업_" + new Date().getHours() + "시" + new Date().getMinutes() + "분";
+        
+        renderPageList();
+        showToast(`'${finalName}'(으)로 보관되고, 새 시트가 열렸습니다.`);
+    }
+
+    function togglePagePopup() { const pp = document.getElementById('page-popup'); if (pp.style.display === 'block') { pp.style.display = 'none'; } else { renderPageList(); pp.style.display = 'block'; } }
+    function triggerSubpageUpload(e) { if(e) e.stopPropagation(); document.getElementById('subpage-upload').click(); }
+
+    function sortSubPages() {
+        if(subPages.length > 0) {
+            subPages.sort((a, b) => pageSortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+        }
+    }
+
+    function toggleSortPages(e) {
+        if(e) e.stopPropagation();
+        if (subPages.length === 0) return;
+        pageSortAsc = !pageSortAsc;
+        const btn = document.getElementById('sort-btn');
+        if(btn) btn.innerText = pageSortAsc ? "이름순 ▲" : "이름순 ▼";
+        sortSubPages();
+        renderPageList();
+        hasUnsavedChanges = true;
+    }
+
+    function handleSubpageUpload(e) {
+        const files = e.target.files;
+        if (!files.length) return;
+        
+        const totalFiles = files.length;
+        isUploadingPages = true; 
+        const pp = document.getElementById('page-popup');
+        pp.style.display = 'none'; 
+        
+        let loadedCount = 0;
+        for (let i = 0; i < totalFiles; i++) {
+            const f = files[i];
+            const r = new FileReader();
+            r.onload = (ev) => {
+                const upgradedHtml = upgradeHtmlToBaseVersion(ev.target.result);
+                subPages.push({ name: f.name, htmlContent: upgradedHtml });
+                loadedCount++;
+                
+                if (loadedCount === totalFiles) {
+                    hasUnsavedChanges = true;
+                    sortSubPages(); 
+                    setTimeout(() => {
+                        renderPageList();
+                        pp.style.display = 'block';
+                        showToast(`${totalFiles}개의 페이지가 목록에 추가되었습니다.`);
+                        setTimeout(() => { isUploadingPages = false; e.target.value = ''; }, 300);
+                    }, 500); 
+                }
+            };
+            r.readAsText(f);
+        }
+    }
+
+    function deleteSubpage(index) { if (confirm(`'${subPages[index].name}' 페이지를 목록에서 삭제하시겠습니까?\n(파일 원본이 지워지는 것은 아니며, 목록에서만 제외됩니다.)`)) { subPages.splice(index, 1); renderPageList(); hasUnsavedChanges = true; } }
+
+    function renderPageList() {
+        const container = document.getElementById('page-list-container'); container.innerHTML = ''; document.getElementById('page-count').innerText = subPages.length;
+        if (subPages.length === 0) { container.innerHTML = '<div style="padding:20px; text-align:center; color:#aaa; font-size:12px;">+ 버튼을 눌러 파일을 추가하세요.</div>'; return; }
+        subPages.forEach((page, idx) => {
+            const div = document.createElement('div'); div.className = 'page-item';
+            div.innerHTML = `
+                <div class="page-item-title" title="${page.name}">📄 ${page.name}</div>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <span class="action-btn action-swap" title="현재 화면을 이 파일로 교체합니다">교체</span>
+                    <span class="action-btn action-open" title="새 탭에서 참고용으로 띄우기">새창↗</span>
+                    <span class="action-btn action-del" title="목록에서 제거">삭제</span>
+                </div>`;
+            div.querySelector('.action-swap').onclick = (e) => { e.stopPropagation(); swapSubpage(idx); };
+            div.querySelector('.action-open').onclick = (e) => { e.stopPropagation(); openSubpage(idx); };
+            div.querySelector('.action-del').onclick = (e) => { e.stopPropagation(); deleteSubpage(idx); };
+            container.appendChild(div);
+        });
+    }
+
+    function swapSubpage(index) {
+        const targetPage = subPages[index];
+        
+        if (nodes.length > 0) {
+            const saveName = prompt(`'${targetPage.name}' 시트로 화면을 교체합니다.\n현재 캔버스의 작업을 보관하려면 이름을 입력하세요.\n(취소 시 교체 작업이 전면 취소됩니다)`, currentSheetName);
+            
+            if (saveName === null) return; 
+            
+            const finalSaveName = saveName.trim() || currentSheetName;
+            const state = captureState();
+            const dataStr = `/*DATA_HOLDER*/\n    let projectId = "${projectId}";\n    let currentSheetName = "${finalSaveName}";\n    let nodes = ${JSON.stringify(state.nodes)};\n    let edges = ${JSON.stringify(state.edges)};\n    let bgSettings = ${JSON.stringify(bgSettings)};\n    let safeSubPages = [];\n    /*DATA_END*/`;
+            
+            const baseHtml = document.documentElement.outerHTML;
+            const sIdx = baseHtml.indexOf("/*DATA_HOLDER*/");
+            const eIdx = baseHtml.indexOf("/*DATA_END*/", sIdx);
+            let cleanHtml = baseHtml;
+            if (sIdx !== -1 && eIdx !== -1) { 
+                cleanHtml = baseHtml.substring(0, sIdx) + dataStr + baseHtml.substring(eIdx + 12); 
+            }
+            subPages.push({ name: finalSaveName, htmlContent: cleanHtml });
+        }
+
+        subPages.splice(index, 1);
+        
+        const stateToLoad = extractDataBlock(targetPage.htmlContent);
+        if (stateToLoad) {
+            nodes = []; edges = []; selectedNodes = []; selectedEdge = null; historyStack = []; redoStack = [];
+            applyState({ nodes: stateToLoad.nodes, edges: stateToLoad.edges });
+            if (stateToLoad.bgSettings) bgSettings = stateToLoad.bgSettings;
+            
+            currentSheetName = targetPage.name; 
+            
+            sortSubPages();
+            renderPageList();
+            zoomExtents(); 
+            hasUnsavedChanges = true;
+            document.getElementById('page-popup').style.display = 'none'; 
+            showToast(`'${targetPage.name}'(으)로 화면 교체 완료!`);
+        } else {
+            alert("파일 데이터를 읽는 중 오류가 발생했습니다.");
+        }
+    }
+
+    function openSubpage(index) { const page = subPages[index]; const blob = new Blob([page.htmlContent], { type: 'text/html' }); const url = URL.createObjectURL(blob); window.open(url, '_blank'); document.getElementById('page-popup').style.display = 'none'; }
+    
+    function updateMarkerGrid() { const grid = document.getElementById('num-grid'); if(!grid) return; grid.innerHTML = ''; const start = (markerCurrentPage - 1) * 25 + 1, end = markerCurrentPage * 25; for(let i = start; i <= end; i++) { const item = document.createElement('div'); item.className = 'num-item' + (activeMarkerValue === i ? ' active' : ''); item.innerText = i; item.onclick = (e) => { e.stopPropagation(); activeMarkerValue = (activeMarkerValue === i) ? null : i; updateMarkerGrid(); }; grid.appendChild(item); } document.getElementById('marker-page-info').innerText = `PAGE ${markerCurrentPage} / 2`; }
+    function changeMarkerPage(dir) { markerCurrentPage = (markerCurrentPage === 1) ? 2 : 1; updateMarkerGrid(); }
+    function toggleMarkerPalette() { const p = document.getElementById('marker-palette'); p.style.display = (p.style.display === 'none' || p.style.display === '') ? 'block' : 'none'; }
+    
+    function captureState() { 
+        nodes.forEach(n => { if (!n.id) n.id = generateId(); }); 
+        const nodeSnapshot = JSON.parse(JSON.stringify(nodes)); 
+        const edgeSnapshot = edges.map(e => { 
+            return { ...e, fromId: e.from ? e.from.id : null, toId: e.to ? e.to.id : null, from: null, to: null }; 
+        }).filter(e => e.fromId && e.toId); 
+        return { nodes: nodeSnapshot, edges: edgeSnapshot }; 
+    }
+    
+    function applyState(state) { 
+        if (!state) return; 
+        nodes = state.nodes; 
+        nodes.forEach(n => { if (!n.id) n.id = generateId(); }); 
+
+        edges = state.edges.map(e => { 
+            let fNode = null, tNode = null; 
+            if (e.fromId && e.toId) { 
+                fNode = nodes.find(n => n.id === e.fromId);
+                tNode = nodes.find(n => n.id === e.toId);
+            } else if (e.fromIdx !== undefined && e.fromIdx !== -1) { 
+                fNode = nodes[e.fromIdx]; 
+                tNode = nodes[e.toIdx]; 
+            } else if (e.from && typeof e.from === 'object') { 
+                fNode = nodes.find(n => Math.abs(n.x - e.from.x) < 0.1 && Math.abs(n.y - e.from.y) < 0.1); 
+                tNode = nodes.find(n => Math.abs(n.x - e.to.x) < 0.1 && Math.abs(n.y - e.to.y) < 0.1); 
+            } 
+            return { ...e, from: fNode, to: tNode }; 
+        }).filter(e => e.from && e.to); 
+        selectedNodes = []; selectedEdge = null; 
+    }
+
+    function saveHistory() { hasUnsavedChanges = true; historyStack.push(captureState()); if(historyStack.length > 50) historyStack.shift(); redoStack = []; }
+    function undo() { if (historyStack.length === 0) return; hasUnsavedChanges = true; redoStack.push(captureState()); applyState(historyStack.pop()); }
+    function redo() { if (redoStack.length === 0) return; hasUnsavedChanges = true; historyStack.push(captureState()); applyState(redoStack.pop()); }
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    function toWorld(sX, sY) { const rect = canvas.getBoundingClientRect(); return { x: (sX - rect.left - currentOffset.x) / currentScale, y: (sY - rect.top - currentOffset.y) / currentScale }; }
+    function toggleHelp() { const t = document.getElementById('toolbar'); const isHidden = window.getComputedStyle(t).display === 'none'; t.style.display = isHidden ? 'block' : 'none'; }
+    function toggleDropdown() { const d = document.getElementById('disk-dropdown'); d.style.display = (d.style.display === 'block') ? 'none' : 'block'; }
+    function toggleBgPanel() { const p = document.getElementById('bg-panel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
+    function applyBgSettings() { hasUnsavedChanges = true; bgSettings.color = document.getElementById('bg-color-picker').value; bgSettings.showGrid = document.getElementById('grid-toggle').checked; toggleBgPanel(); }
+    function resetDefaultSettings() { bgSettings.color = "#fdfbf0"; bgSettings.showGrid = true; document.getElementById('bg-color-picker').value = "#fdfbf0"; document.getElementById('grid-toggle').checked = true; applyBgSettings(); }
+
+    window.onclick = (e) => {
+        if (isUploadingPages) return; 
+        if (!e.target.matches('.disk-btn')) document.getElementById('disk-dropdown').style.display = 'none';
+        if (!e.target.closest('#bg-settings-container')) document.getElementById('bg-panel').style.display = 'none';
+        if (!e.target.closest('#marker-menu')) { document.getElementById('marker-palette').style.display = 'none'; activeMarkerValue = null; updateMarkerGrid(); }
+        if (!e.target.closest('#color-palette') && !e.target.closest('button[title="글자색 변경"]')) { const cp = document.getElementById('color-palette'); if (cp) cp.style.display = 'none'; }
+        if (!e.target.closest('#image-menu')) { const imgDrop = document.getElementById('image-dropdown'); if (imgDrop) imgDrop.style.display = 'none'; }
+        if (!e.target.closest('#page-menu-container') && !e.target.closest('.action-del')) { const pp = document.getElementById('page-popup'); if (pp) pp.style.display = 'none'; }
+    };
+
+    function openNodeModal(pos, node = null) {
+        if (node) { editingNode = node; document.getElementById('modal-title').innerText = "아이디어 수정"; nodeInput.value = node.text; nodeTypeSelect.value = node.type; currentTextAlign = node.textAlign || "center"; }
+        else { pendingPos = pos || currentWorldMouse; editingNode = null; document.getElementById('modal-title').innerText = "아이디어 구성"; nodeInput.value = ''; nodeTypeSelect.selectedIndex = 0; currentTextAlign = "center"; }
+        setAlign(currentTextAlign); applyModalZoom(); modalOverlay.style.display = 'flex'; setTimeout(() => nodeInput.focus(), 50);
+    }
+
+    function closeModal(save) {
+        if (save && nodeInput.value.trim()) {
+            saveHistory(); const ty = nodeTypeSelect.value; let fs = 14, op = 1.0;
+            if(ty === "1") fs = 21; else if(ty === "2") { fs = 17; op = 0.8; } else if(ty === "3") { fs = 14; op = 0.7; } else if(ty === "4") { fs = 14; op = 0.0; } 
+            if (editingNode) { editingNode.text = nodeInput.value; editingNode.textAlign = currentTextAlign; if (editingNode.type !== ty) { editingNode.fontSize = fs; editingNode.opacity = op; editingNode.width = (ty === "2") ? 280 : (ty === "3" || ty === "4" ? 420 : 140); } editingNode.type = ty; } 
+            else { let bw = (ty === "2") ? 280 : (ty === "3" || ty === "4" ? 420 : 140); nodes.push({ id: generateId(), x: pendingPos.x, y: pendingPos.y, text: nodeInput.value, type: ty, width: bw, height: 60, fontSize: fs, colorIndex: 0, opacity: op, textAlign: currentTextAlign }); }
+        }
+        editingNode = null; setTimeout(() => { modalOverlay.style.display = 'none'; }, 100);
+    }
+
+    function performPaste(clipData) {
+        if (!clipData || !clipData.nodes) return;
+        saveHistory();
+        const nNodes = clipData.nodes.map(n => { 
+            let nn = JSON.parse(JSON.stringify(n)); 
+            nn.id = generateId(); 
+            nn.x = currentWorldMouse.x + (n.x - clipData.cx); 
+            nn.y = currentWorldMouse.y + (n.y - clipData.cy); 
+            return nn; 
+        });
+        const nEdges = clipData.edges.map(e => { 
+            let ne = JSON.parse(JSON.stringify(e)); 
+            ne.from = nNodes[e.fi]; 
+            ne.to = nNodes[e.ti]; 
+            delete ne.fi; delete ne.ti; 
+            return ne; 
+        });
+        nodes.push(...nNodes); edges.push(...nEdges); selectedNodes = [...nNodes];
+        showToast("블럭을 붙여넣었습니다.");
+    }
+
+    function copySelected() {
+        if (selectedNodes.length === 0) return;
+        const cNodes = JSON.parse(JSON.stringify(selectedNodes)), cEdges = [];
+        edges.forEach(e => { const fi = selectedNodes.indexOf(e.from), ti = selectedNodes.indexOf(e.to); if (fi !== -1 && ti !== -1) { let ne = JSON.parse(JSON.stringify(e)); ne.fi = fi; ne.ti = ti; cEdges.push(ne); } });
+        let ax = 0, ay = 0; cNodes.forEach(n => { ax += n.x; ay += n.y; });
+        
+        const clipData = { ideaBlockCopy: true, nodes: cNodes, edges: cEdges, cx: ax/cNodes.length, cy: ay/cNodes.length };
+        copyBuffer = clipData; 
+        
+        try {
+            const textArea = document.createElement("textarea");
+            textArea.value = JSON.stringify(clipData);
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            showToast("블럭이 복사되었습니다. 다른 탭에서 Ctrl+V를 누르세요.");
+        } catch (e) { showToast("동일한 창 내에서만 복사되었습니다."); }
+    }
+
+    document.addEventListener('paste', (e) => {
+        if (modalOverlay.style.display === 'flex') return; 
+        try {
+            let text = (e.clipboardData || window.clipboardData).getData('text');
+            let clipData = JSON.parse(text);
+            if (clipData && clipData.ideaBlockCopy) {
+                e.preventDefault();
+                performPaste(clipData);
+            }
+        } catch(err) {
+            if (copyBuffer) performPaste(copyBuffer);
+        }
+    });
+
+    function zoomExtents() {
+        if (nodes.length === 0) return;
+        let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+        nodes.forEach(n => { minX = Math.min(minX, n.x - n.width/2); maxX = Math.max(maxX, n.x + n.width/2); minY = Math.min(minY, n.y - n.height/2); maxY = Math.max(maxY, n.y + n.height/2); });
+        const cW = maxX - minX + 200, cH = maxY - minY + 200;
+        targetScale = Math.min(canvas.width / cW, canvas.height / cH, 1.5);
+        targetOffset.x = canvas.width / 2 - (minX + maxX) / 2 * targetScale;
+        targetOffset.y = canvas.height / 2 - (minY + maxY) / 2 * targetScale;
+    }
+
+    async function saveProject() {
+        document.getElementById('disk-dropdown').style.display = 'none';
+        currentFileHandle = await getVerifiedHandle();
+
+        const state = captureState();
+        const safeArr = subPages.map(p => ({ name: p.name, data: encodeSubpageContent(p.htmlContent) }));
+        const dataStr = `/*DATA_HOLDER*/\n    let projectId = "${projectId}";\n    let currentSheetName = "${currentSheetName}";\n    let nodes = ${JSON.stringify(state.nodes)};\n    let edges = ${JSON.stringify(state.edges)};\n    let bgSettings = ${JSON.stringify(bgSettings)};\n    let safeSubPages = ${JSON.stringify(safeArr)};\n    /*DATA_END*/`;
+        
+        const baseHtml = document.documentElement.outerHTML;
+        const sIdx = baseHtml.indexOf("/*DATA_HOLDER*/");
+        const eIdx = baseHtml.indexOf("/*DATA_END*/", sIdx);
+        let html = baseHtml;
+        if (sIdx !== -1 && eIdx !== -1) { html = baseHtml.substring(0, sIdx) + dataStr + baseHtml.substring(eIdx + 12); }
+
+        if (window.showSaveFilePicker) {
+            try {
+                if (!currentFileHandle) {
+                    currentFileHandle = await window.showSaveFilePicker({
+                        id: 'IdeaBlockDir', 
+                        startIn: 'documents',
+                        suggestedName: 'idea_map.html',
+                        types: [{ description: 'HTML File', accept: { 'text/html': ['.html'] } }]
+                    });
+                }
+                const writable = await currentFileHandle.createWritable();
+                await writable.write(new Blob([html], { type: "text/html" }));
+                await writable.close();
+                
+                hasUnsavedChanges = false;
+                if (projectId && currentFileHandle) { await saveHandleToDB(projectId, currentFileHandle); }
+                await saveHandleToDB("lastOpenedFile", currentFileHandle); 
+                
+                const diskBtn = document.getElementById('main-disk-btn'); diskBtn.innerText = '✅'; setTimeout(() => { diskBtn.innerText = '💾'; }, 1500);
+            } catch (err) { console.error("Save failed", err); }
+        } else { alert("현재 브라우저에서는 덮어쓰기를 지원하지 않습니다."); }
+    }
+
+    async function exportProject() {
+        document.getElementById('disk-dropdown').style.display = 'none';
+        if (window.showSaveFilePicker) {
+            try {
+                const newHandle = await window.showSaveFilePicker({ id: 'IdeaBlockDir', startIn: 'documents', suggestedName: 'idea_map_new.html', types: [{ description: 'HTML File', accept: { 'text/html': ['.html'] } }] });
+                projectId = "id_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+                currentFileHandle = newHandle;
+                
+                const state = captureState();
+                const safeArr = subPages.map(p => ({ name: p.name, data: encodeSubpageContent(p.htmlContent) }));
+                const dataStr = `/*DATA_HOLDER*/\n    let projectId = "${projectId}";\n    let currentSheetName = "${currentSheetName}";\n    let nodes = ${JSON.stringify(state.nodes)};\n    let edges = ${JSON.stringify(state.edges)};\n    let bgSettings = ${JSON.stringify(bgSettings)};\n    let safeSubPages = ${JSON.stringify(safeArr)};\n    /*DATA_END*/`;
+                
+                const baseHtml = document.documentElement.outerHTML; const sIdx = baseHtml.indexOf("/*DATA_HOLDER*/"); const eIdx = baseHtml.indexOf("/*DATA_END*/", sIdx); let html = baseHtml;
+                if (sIdx !== -1 && eIdx !== -1) { html = baseHtml.substring(0, sIdx) + dataStr + baseHtml.substring(eIdx + 12); }
+                
+                const writable = await newHandle.createWritable(); await writable.write(new Blob([html], { type: "text/html" })); await writable.close();
+                hasUnsavedChanges = false; await saveHandleToDB(projectId, currentFileHandle); await saveHandleToDB("lastOpenedFile", currentFileHandle);
+                const diskBtn = document.getElementById('main-disk-btn'); diskBtn.innerText = '✅'; setTimeout(() => { diskBtn.innerText = '💾'; }, 1500);
+            } catch (err) { console.error(err); }
+        } else {
+            const name = prompt("새 파일명:", "idea_map"); if(!name) return;
+            const state = captureState(); const safeArr = subPages.map(p => ({ name: p.name, data: encodeSubpageContent(p.htmlContent) }));
+            const dataStr = `/*DATA_HOLDER*/\n    let projectId = "${projectId}";\n    let currentSheetName = "${currentSheetName}";\n    let nodes = ${JSON.stringify(state.nodes)};\n    let edges = ${JSON.stringify(state.edges)};\n    let bgSettings = ${JSON.stringify(bgSettings)};\n    let safeSubPages = ${JSON.stringify(safeArr)};\n    /*DATA_END*/`;
+            const baseHtml = document.documentElement.outerHTML; const sIdx = baseHtml.indexOf("/*DATA_HOLDER*/"); const eIdx = baseHtml.indexOf("/*DATA_END*/", sIdx);
+            let html = baseHtml.substring(0, sIdx) + dataStr + baseHtml.substring(eIdx + 12);
+            const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([html], { type: "text/html" })); link.download = name + ".html"; link.click(); hasUnsavedChanges = false;
+        }
+    }
+
+    async function showOpenModal() {
+        document.getElementById('disk-dropdown').style.display = 'none';
+        const handle = await getHandleFromDB("lastOpenedFile");
+        if (handle) {
+            document.getElementById('recent-filename').innerText = handle.name;
+            document.getElementById('recent-file-modal').style.display = 'flex';
+        } else {
+            triggerNativeOpen(); 
+        }
+    }
+
+    function closeOpenModal() { document.getElementById('recent-file-modal').style.display = 'none'; }
+
+    async function loadRecentFile() {
+        closeOpenModal();
+        const handle = await getHandleFromDB("lastOpenedFile");
+        if (handle) {
+            try {
+                if ((await handle.requestPermission({ mode: 'read' })) === 'granted') {
+                    const file = await handle.getFile();
+                    const text = await file.text();
+                    processImportedText(text, file.name);
+                    currentFileHandle = handle;
+                    showToast("최근 작업 파일을 불러왔습니다.");
+                } else {
+                    alert("파일 접근 권한이 없습니다. 다른 위치에서 열기를 이용해주세요.");
+                }
+            } catch(e) { alert("파일이 이동되었거나 삭제되었습니다. 탐색기를 이용해주세요."); triggerNativeOpen(); }
+        }
+    }
+
+    async function triggerNativeOpen() {
+        closeOpenModal();
+        if (window.showOpenFilePicker) {
+            try {
+                const [fileHandle] = await window.showOpenFilePicker({
+                    id: 'IdeaBlockDir',
+                    startIn: 'documents',
+                    types: [{ description: 'HTML File', accept: { 'text/html': ['.html'] } }]
+                });
+                const file = await fileHandle.getFile();
+                const text = await file.text();
+                processImportedText(text, file.name);
+                
+                currentFileHandle = fileHandle;
+                await saveHandleToDB("lastOpenedFile", fileHandle); 
+                if (projectId) await saveHandleToDB(projectId, currentFileHandle);
+            } catch (err) { console.error(err); }
+        } else { document.getElementById('file-input').click(); }
+    }
+
+    function importProject(e) { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = (ev) => processImportedText(ev.target.result, f.name); r.readAsText(f); currentFileHandle = null; e.target.value = ''; }
+
+    function processImportedText(c, fileName = null) {
+        const state = extractDataBlock(c);
+        if(state) {
+            projectId = state.projectId || "id_" + Date.now();
+            
+            if (fileName) {
+                currentSheetName = fileName.replace(/\.[^/.]+$/, ""); 
+            } else {
+                currentSheetName = state.currentSheetName || "메인 작업"; 
+            }
+            
+            applyState({ nodes: state.nodes, edges: state.edges });
+            if (state.bgSettings) bgSettings = state.bgSettings;
+            if (state.subPages) subPages = state.subPages;
+            zoomExtents();
+            hasUnsavedChanges = false;
+        } else { projectId = "id_" + Date.now(); }
+    }
+
+    function saveAsImage() { render(); const dataURL = canvas.toDataURL('image/jpeg', 0.9); const link = document.createElement('a'); link.href = dataURL; link.download = `idea_map_${Date.now()}.jpg`; document.body.appendChild(link); link.click(); document.body.removeChild(link); document.getElementById('disk-dropdown').style.display = 'none'; }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); saveProject(); return; }
+        if (e.ctrlKey && e.key.toLowerCase() === 'o') { e.preventDefault(); showOpenModal(); return; } 
+
+        if (modalOverlay.style.display === 'flex') { if (e.key === 'Escape') { if (nodeInput.selectionStart !== nodeInput.selectionEnd) { nodeInput.setSelectionRange(nodeInput.selectionEnd, nodeInput.selectionEnd); clearTimeout(selectionTimeout); e.preventDefault(); } else { closeModal(false); } } return; }
+        if (document.getElementById('recent-file-modal').style.display === 'flex') { if (e.key === 'Escape') { closeOpenModal(); } return; }
+
+        if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); openNodeModal(currentWorldMouse); return; }
+        if (e.key === 'Enter' && !e.shiftKey && selectedNodes.length === 1 && !["area", "marker", "image"].includes(selectedNodes[0].type)) { e.preventDefault(); openNodeModal(null, selectedNodes[0]); return; }
+        if (e.ctrlKey && e.key.toLowerCase() === 'z') undo();
+        if (e.shiftKey && e.key.toLowerCase() === 'z') redo();
+        if (e.ctrlKey && e.key.toLowerCase() === 'c') { copySelected(); }
+        
+        if (e.ctrlKey && e.key.toLowerCase() === 'e') { e.preventDefault(); zoomExtents(); return; }
+        
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            saveHistory();
+            if (selectedNodes.length > 0) { edges = edges.filter(ed => !selectedNodes.includes(ed.from) && !selectedNodes.includes(ed.to)); nodes = nodes.filter(n => !selectedNodes.includes(n)); selectedNodes = []; } 
+            else if (selectedEdge) { edges = edges.filter(ed => ed !== selectedEdge); selectedEdge = null; }
+        }
+        
+        if (selectedNodes.length === 1) {
+            const n = selectedNodes[0];
+            if (['ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowLeft'].includes(e.key)) { saveHistory(); e.preventDefault(); }
+            if (e.key === 'ArrowRight') n.colorIndex = ((n.colorIndex || 0) + 1) % 4;
+            else if (e.key === 'ArrowLeft') n.colorIndex = ((n.colorIndex || 0) + 3) % 4;
+            else if (e.key === 'ArrowUp') n.opacity = Math.min(1.0, (n.opacity || 1.0) + 0.1);
+            else if (e.key === 'ArrowDown') n.opacity = Math.max(0.1, (n.opacity || 1.0) - 0.1);
+        } else if (selectedEdge) {
+            if (['ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowLeft'].includes(e.key)) saveHistory();
+            if (e.ctrlKey && e.key === 'ArrowUp') { e.preventDefault(); selectedEdge.curveSide = -1; }
+            else if (e.ctrlKey && e.key === 'ArrowDown') { e.preventDefault(); selectedEdge.curveSide = 1; }
+            else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); selectedEdge.dirType = ((selectedEdge.dirType || 0) + (e.key === 'ArrowUp' ? 1 : 2)) % 3; }
+            else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { isChangingColor = true; selectedEdge.colorIndex = ((selectedEdge.colorIndex || 0) + (e.key === 'ArrowRight' ? 1 : 3)) % 4; setTimeout(() => isChangingColor = false, 400); }
+        }
+    });
+
+    nodeInput.addEventListener('keydown', (e) => {
+        clearTimeout(selectionTimeout); 
+        if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); closeModal(true); }
+        else if (e.ctrlKey && e.key === 'ArrowUp') { e.preventDefault(); nodeTypeSelect.selectedIndex = (nodeTypeSelect.selectedIndex + 3) % 4; }
+        else if (e.ctrlKey && e.key === 'ArrowDown') { e.preventDefault(); nodeTypeSelect.selectedIndex = (nodeTypeSelect.selectedIndex + 1) % 4; }
+        else if (e.ctrlKey && e.key.toLowerCase() === 'b') { e.preventDefault(); applyFormat('**'); }
+        else if (e.ctrlKey && e.key.toLowerCase() === 'i') { e.preventDefault(); applyFormat('*'); }
+        else if (e.ctrlKey && e.key.toLowerCase() === 'u') { e.preventDefault(); applyFormat('__'); }
+    });
+    nodeInput.addEventListener('mousedown', () => clearTimeout(selectionTimeout));
+
+    canvas.addEventListener('dblclick', (e) => { const wp = toWorld(e.clientX, e.clientY); const hit = nodes.slice().reverse().find(n => !["area", "marker", "image"].includes(n.type) && wp.x > n.x-n.width/2 && wp.x < n.x+n.width/2 && wp.y > n.y-n.height/2 && wp.y < n.y+n.height/2); if (hit) openNodeModal(null, hit); else openNodeModal(wp); });
+
+    canvas.addEventListener('mousedown', (e) => {
+        const wp = toWorld(e.clientX, e.clientY); lastMousePos = { x: e.clientX, y: e.clientY };
+        if (e.button === 2) { isPanning = true; return; }
+        if(activeImageData !== null && activeImageDimensions !== null) { saveHistory(); nodes.push({ id: generateId(), x: wp.x, y: wp.y, type: "image", data: activeImageData, width: activeImageDimensions.w, height: activeImageDimensions.h, colorIndex: 0, opacity: 1.0 }); activeImageData = null; activeImageDimensions = null; return; }
+        if(activeMarkerValue !== null) { saveHistory(); nodes.push({ id: generateId(), x: wp.x, y: wp.y, type: "marker", value: activeMarkerValue, width: 30, height: 30, colorIndex: 0, opacity: 1.0 }); activeMarkerValue = null; updateMarkerGrid(); return; }
+        const hitNormal = nodes.slice().reverse().find(n => !["area"].includes(n.type) && wp.x > n.x-n.width/2 && wp.x < n.x+n.width/2 && wp.y > n.y-n.height/2 && wp.y < n.y+n.height/2);
+        const hitArea = nodes.slice().reverse().find(n => n.type === "area" && wp.x > n.x-n.width/2-5 && wp.x < n.x+n.width/2+5 && wp.y > n.y-n.height/2-5 && wp.y < n.y+n.height/2+5);
+
+        if (e.shiftKey) { if (hitNormal) { connectingNode = hitNormal; return; } if (hitArea) { connectingNode = hitArea; return; } }
+        if (e.ctrlKey) { const anyHit = hitNormal || hitArea; if (anyHit) { if (selectedNodes.includes(anyHit)) { selectedNodes = selectedNodes.filter(n => n !== anyHit); } else { selectedNodes.push(anyHit); } draggingNodes = [...selectedNodes]; dragStartPos = wp; return; } else { isCreatingArea = true; selectionRect.x1 = selectionRect.x2 = wp.x; selectionRect.y1 = selectionRect.y2 = wp.y; return; } }
+
+        if (selectedNodes.length === 1 && !["marker"].includes(selectedNodes[0].type)) { const h = getHandleAt(selectedNodes[0], wp.x, wp.y); if (h) { saveHistory(); resizingNode = selectedNodes[0]; resizeHandle = h; dragStartPos = wp; resizingNode.startState = { x: resizingNode.x, y: resizingNode.y, w: resizingNode.width, h: resizingNode.height }; return; } }
+
+        if (selectedEdge) { const ps = getBestPoints(selectedEdge.from, selectedEdge.to, selectedEdge.manualStart, selectedEdge.manualEnd); if (Math.hypot(wp.x - ps.f.x, wp.y - ps.f.y) < 20/currentScale) { saveHistory(); draggingEdgeHandle = 'start'; return; } if (Math.hypot(wp.x - ps.t.x, wp.y - ps.t.y) < 20/currentScale) { saveHistory(); draggingEdgeHandle = 'end'; return; } }
+        const eIdx = edges.findIndex(ed => distToSegment(wp, getBestPoints(ed.from, ed.to, ed.manualStart, ed.manualEnd).f, getBestPoints(ed.from, ed.to, ed.manualStart, ed.manualEnd).t) < 40 / currentScale);
+        
+        if (hitNormal) { saveHistory(); selectedEdge = null; if (!selectedNodes.includes(hitNormal)) selectedNodes = [hitNormal]; draggingNodes = [...selectedNodes]; dragStartPos = wp; } 
+        else if (eIdx !== -1) { selectedNodes = []; selectedEdge = edges[eIdx]; } 
+        else if (hitArea) { saveHistory(); selectedEdge = null; if (!selectedNodes.includes(hitArea)) selectedNodes = [hitArea]; draggingNodes = [...selectedNodes]; dragStartPos = wp; }
+        else { selectedNodes = []; selectedEdge = null; isSelecting = true; selectionRect.x1 = selectionRect.x2 = wp.x; selectionRect.y1 = selectionRect.y2 = wp.y; }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        const wp = toWorld(e.clientX, e.clientY); currentWorldMouse = wp;
+        if (isPanning) { targetOffset.x += (e.clientX - lastMousePos.x); targetOffset.y += (e.clientY - lastMousePos.y); const limitX = (window.innerWidth * WORLD_W_FACTOR) / 2 * targetScale, limitY = (window.innerHeight * WORLD_H_FACTOR) / 2 * targetScale; targetOffset.x = Math.min(Math.max(targetOffset.x, window.innerWidth/2 - limitX), window.innerWidth/2 + limitX); targetOffset.y = Math.min(Math.max(targetOffset.y, window.innerHeight/2 - limitY), window.innerHeight/2 + limitY); lastMousePos = { x: e.clientX, y: e.clientY }; }
+        else if (isSelecting || isCreatingArea) { selectionRect.x2 = wp.x; selectionRect.y2 = wp.y; }
+        else if (resizingNode) { const state = resizingNode.startState; if(state) { let dx = wp.x - dragStartPos.x, dy = wp.y - dragStartPos.y; let newW = state.w, newH = state.h, newX = state.x, newY = state.y; if (resizeHandle.includes('r')) { newW = Math.max(40, state.w + dx); newX = state.x + (newW - state.w) / 2; } else if (resizeHandle.includes('l')) { newW = Math.max(40, state.w - dx); newX = state.x - (newW - state.w) / 2; } if (resizeHandle.includes('b')) { newH = Math.max(20, state.h + dy); newY = state.y + (newH - state.h) / 2; } else if (resizeHandle.includes('t')) { newH = Math.max(20, state.h - dy); newY = state.y - (newH - state.h) / 2; } resizingNode.width = newW; resizingNode.height = newH; resizingNode.x = newX; resizingNode.y = newY; } }
+        else if (draggingEdgeHandle) { const target = nodes.slice().reverse().find(n => wp.x > n.x-n.width/2-20 && wp.x < n.x+n.width/2+20 && wp.y > n.y-n.height/2-20 && wp.y < n.y+n.height/2+20); if (target) { const side = getNearestSide(target, wp); if (draggingEdgeHandle === 'start') { selectedEdge.from = target; selectedEdge.manualStart = side; } else { selectedEdge.to = target; selectedEdge.manualEnd = side; } } } else if (draggingNodes.length > 0) { const dx = wp.x - dragStartPos.x, dy = wp.y - dragStartPos.y; draggingNodes.forEach(n => { n.x += dx; n.y += dy; }); dragStartPos = wp; }
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (isSelecting) { const x1 = Math.min(selectionRect.x1, selectionRect.x2), x2 = Math.max(selectionRect.x1, selectionRect.x2), y1 = Math.min(selectionRect.y1, selectionRect.y2), y2 = Math.max(selectionRect.y1, selectionRect.y2); selectedNodes = nodes.filter(n => n.x > x1 && n.x < x2 && n.y > y1 && n.y < y2); }
+        if (isCreatingArea) { const w = Math.abs(selectionRect.x2 - selectionRect.x1), h = Math.abs(selectionRect.y2 - selectionRect.y1); if (w > 15 && h > 15) { saveHistory(); nodes.push({ id: generateId(), x: (selectionRect.x1 + selectionRect.x2)/2, y: (selectionRect.y1 + selectionRect.y2)/2, text: "", type: "area", width: w, height: h, fontSize: 14, colorIndex: 3, opacity: 0.7 }); } }
+        if (connectingNode) { const hit = nodes.slice().reverse().find(n => n !== connectingNode && currentWorldMouse.x > n.x-n.width/2 && currentWorldMouse.x < n.x+n.width/2 && currentWorldMouse.y > n.y-n.height/2 && currentWorldMouse.y < n.y+n.height/2); if (hit) { saveHistory(); edges.push({ from: connectingNode, to: hit, colorIndex: 0, dirType: 0, curveSide: Math.random() > 0.5 ? 1 : -1 }); } }
+        isPanning = isSelecting = isCreatingArea = false; draggingNodes = []; resizingNode = null; connectingNode = null; draggingEdgeHandle = false;
+    });
+
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault(); const wp = toWorld(e.clientX, e.clientY); let handled = false;
+        if (selectedNodes.length === 1 && !["area", "marker", "image"].includes(selectedNodes[0].type)) { const n = selectedNodes[0]; if (wp.x > n.x - n.width/2 && wp.x < n.x + n.width/2 && wp.y > n.y - n.height/2 && wp.y < n.y + n.height/2) { saveHistory(); n.fontSize = Math.max(8, n.fontSize + (e.deltaY > 0 ? -1 : 1)); handled = true; } }
+        if (!handled) { targetScale = Math.min(Math.max(0.05, targetScale - e.deltaY * 0.0006), 5.0); targetOffset.x = e.clientX - wp.x * targetScale; targetOffset.y = e.clientY - wp.y * targetScale; }
+    }, { passive: false });
+
+    function parseRichText(text) {
+        let result = []; let bold = false, italic = false, underline = false, color = null; let i = 0;
+        while (i < text.length) {
+            if (text.startsWith('**', i)) { bold = !bold; i += 2; continue; } if (text.startsWith('__', i)) { underline = !underline; i += 2; continue; } if (text.startsWith('*', i)) { italic = !italic; i += 1; continue; }
+            if (text.startsWith('[c:', i)) { let endIdx = text.indexOf(']', i); if (endIdx !== -1) { color = text.substring(i + 3, endIdx); i = endIdx + 1; continue; } }
+            if (text.startsWith('[/c]', i)) { color = null; i += 4; continue; } result.push({ char: text[i], bold, italic, underline, color }); i++;
+        } return result;
+    }
+
+    function wrapStyledTextAndResize(context, node) {
+        if (["marker", "image"].includes(node.type)) return { lines: [], lh: 0, startY: 0 };
+        const padding = 28; const maxWidth = node.width - padding; const styledChars = parseRichText(node.text || "");
+        const lines = []; let currentLine = []; let currentWidth = 0;
+        for (let i = 0; i < styledChars.length; i++) {
+            let sc = styledChars[i];
+            if (sc.char === '\n') { lines.push({ chars: currentLine, width: currentWidth }); currentLine = []; currentWidth = 0; continue; }
+            let fontStyle = (sc.bold ? "bold " : "") + (sc.italic ? "italic " : ""); context.font = `${fontStyle}${node.fontSize}px 'Malgun Gothic'`; let w = context.measureText(sc.char).width;
+            if (currentWidth + w > maxWidth && currentLine.length > 0) { lines.push({ chars: currentLine, width: currentWidth }); currentLine = [sc]; currentWidth = w; } else { currentLine.push(sc); currentWidth += w; }
+        } lines.push({ chars: currentLine, width: currentWidth });
+        const lh = node.fontSize * 1.5; const totalTextHeight = lines.length * lh; node.height = Math.max(60, totalTextHeight + padding);
+        return { lines, lh, startY: node.y - (totalTextHeight / 2) + (lh / 2) };
+    }
+
+    function getBestPoints(f, t, ms, me) {
+        if (!f || !t) return {f:{x:0,y:0}, t:{x:0,y:0}}; const gp = (n) => ({top:{x:n.x,y:n.y-n.height/2}, bottom:{x:n.x,y:n.y+n.height/2}, left:{x:n.x-n.width/2,y:n.y}, right:{x:n.x+n.width/2,y:n.y}});
+        const fp=gp(f), tp=t.width?gp(t):{a:t}; let bf = ms?fp[ms]:null, bt = me?tp[me]:null;
+        if(!bf || !bt) { let m=Infinity; const fl=ms?[fp[ms]]:Object.values(fp), tl=me?[tp[me]]:(t.width?Object.values(tp):[t]); fl.forEach(fpx => tl.forEach(tpx => { let d=Math.hypot(fpx.x-tpx.x, fpx.y-tpx.y); if(d<m){m=d; if(!ms)bf=fpx; if(!me)bt=tpx;}})); } return {f:bf, t:bt};
+    }
+    function distToSegment(p, v, w) { const l2 = (v.x-w.x)**2+(v.y-w.y)**2; if(l2===0) return Math.hypot(p.x-v.x,p.y-v.y); let t = Math.max(0,Math.min(1,((p.x-v.x)*(w.x-v.x)+(p.y-v.y)*(w.y-v.y))/l2)); return Math.hypot(p.x-(v.x+t*(w.x-v.x)),p.y-(v.y+t*(w.y-v.y))); }
+    function getHandleAt(n, wx, wy) { const s = (HANDLE_SIZE + 5) / currentScale, l = n.x - n.width/2, r = n.x + n.width/2, t = n.y - n.height/2, b = n.y + n.height/2; if (Math.hypot(wx - l, wy - t) < s) return 'tl'; if (Math.hypot(wx - r, wy - t) < s) return 'tr'; if (Math.hypot(wx - l, wy - b) < s) return 'bl'; if (Math.hypot(wx - r, wy - b) < s) return 'br'; return null; }
+    function getNearestSide(n, wp) { const d = [Math.abs(wp.y-(n.y-n.height/2)), Math.abs(wp.y-(n.y+n.height/2)), Math.abs(wp.x-(n.x-n.width/2)), Math.abs(wp.x-(n.x+n.width/2))]; const m = Math.min(...d); return m===d[0]?'top':m===d[1]?'bottom':m===d[2]?'left':'right'; }
+
+    function drawCurvedArrow(ctx, f, t, color, isGhost = false, isSelected = false, ms, me, dir = 0, curveSide = 1) {
+        if (!f || !t || f.x === undefined || t.x === undefined || isNaN(f.x) || isNaN(t.x)) return; 
+        
+        const ps = getBestPoints(f, t, ms, me); const midX = (ps.f.x + ps.t.x) / 2, midY = (ps.f.y + ps.t.y) / 2, dx = ps.t.x - ps.f.x, dy = ps.t.y - ps.f.y, len = Math.hypot(dx, dy) || 1, offset = len * 0.10 * (curveSide || 1), nx = -dy / len, ny = dx / len, cpX = midX + nx * offset, cpY = midY + ny * offset; 
+        ctx.save(); ctx.globalAlpha = isSelected ? 1.0 : 0.65; ctx.strokeStyle = (isSelected && !isChangingColor) ? "#2196f3" : color;
+        if (!isGhost) { const segments = 20; for(let i=0; i<segments; i++) { const t1 = i/segments, t2 = (i+1)/segments, thick = 0.6 + Math.sin(Math.PI * t1) * 0.6; ctx.lineWidth = (isSelected ? 3 : 1.8) * thick / currentScale; const q1 = {x:(1-t1)**2*ps.f.x+2*(1-t1)*t1*cpX+t1**2*ps.t.x, y:(1-t1)**2*ps.f.y+2*(1-t1)*t1*cpY+t1**2*ps.t.y}, q2 = {x:(1-t2)**2*ps.f.x+2*(1-t2)*t2*cpX+t2**2*ps.t.x, y:(1-t2)**2*ps.f.y+2*(1-t2)*t2*cpY+t2**2*ps.t.y}; ctx.beginPath(); ctx.moveTo(q1.x, q1.y); ctx.lineTo(q2.x, q2.y); ctx.stroke(); } }
+        else { ctx.setLineDash([5,5]); ctx.lineWidth = 1.5/currentScale; ctx.beginPath(); ctx.moveTo(ps.f.x, ps.f.y); ctx.quadraticCurveTo(cpX, cpY, ps.t.x, ps.t.y); ctx.stroke(); }
+        const drawHead = (x, y, angle) => { const h = (isSelected ? 14 : 10) / currentScale; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x-h*Math.cos(angle-Math.PI/6), y-h*Math.sin(angle-Math.PI/6)); ctx.lineTo(x-h*Math.cos(angle+Math.PI/6), y-h*Math.sin(angle+Math.PI/6)); ctx.closePath(); ctx.fillStyle = ctx.strokeStyle; ctx.fill(); };
+        if (dir === 0 || dir === 2) drawHead(ps.t.x, ps.t.y, Math.atan2(ps.t.y-cpY, ps.t.x-cpX)); if (dir === 1 || dir === 2) drawHead(ps.f.x, ps.f.y, Math.atan2(ps.f.y-cpY, ps.f.x-cpX));
+        if(isSelected && !isChangingColor) { ctx.globalAlpha = 1.0; ctx.fillStyle="white"; ctx.strokeStyle="#2196f3"; ctx.lineWidth=2/currentScale; [ps.f, ps.t].forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 5/currentScale, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }); } ctx.restore();
+    }
+
+    function areaContainsNodes(area, allNodes) { return allNodes.some(n => n !== area && n.type !== "area" && n.x > area.x - area.width/2 && n.x < area.x + area.width/2 && n.y > area.y - area.height/2 && n.y < area.y + area.height/2); }
+
+    const drawNode = (n) => {
+        if (!n) return; const sel = selectedNodes.includes(n); ctx.save();
+        if (n.type !== "area") { ctx.shadowColor="rgba(0,0,0,0.15)"; ctx.shadowBlur=10; ctx.shadowOffsetX=3; ctx.shadowOffsetY=3; }
+        
+        if (n.type === "marker") { 
+            ctx.beginPath(); ctx.arc(n.x, n.y, 15, 0, Math.PI * 2); ctx.fillStyle = COLORS[n.colorIndex || 0]; ctx.fill(); ctx.strokeStyle = sel ? "#2196f3" : "#e0dcc5"; ctx.lineWidth = sel ? 3 : 1.5; ctx.stroke(); ctx.fillStyle = "white"; ctx.font = "bold 13px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(n.value, n.x, n.y); 
+        } 
+        else if (n.type === "image") {
+            let img = imageCache.get(n.data); if (!img) { img = new Image(); img.onload = () => render(); img.src = n.data; imageCache.set(n.data, img); }
+            ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 8); ctx.fillStyle = "white"; ctx.fill();
+            ctx.save(); ctx.shadowColor = "transparent"; ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 8); ctx.clip(); if (img.complete) ctx.drawImage(img, n.x-n.width/2, n.y-n.height/2, n.width, n.height); ctx.restore();
+            ctx.shadowColor = "transparent"; ctx.strokeStyle = sel ? "#2196f3" : "#cccccc"; ctx.lineWidth = 3; ctx.strokeRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height);
+        }
+        else if (n.type === "area") { ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); ctx.fillStyle = `rgba(255, 255, 255, 0.05)`; ctx.fill(); ctx.shadowColor = "transparent"; ctx.setLineDash([2, 3]); ctx.strokeStyle = COLORS[n.colorIndex || 0]; ctx.globalAlpha = sel ? 1.0 : 0.7; ctx.lineWidth = (sel ? 4 : 2) / currentScale; ctx.stroke(); } 
+        else { 
+            let layoutData = wrapStyledTextAndResize(ctx, n), al = n.opacity !== undefined ? n.opacity : 1.0; if(selectedNodes.length>1 && sel) al *= 0.5;
+            if (n.type !== "4") { ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); ctx.fillStyle = `rgba(255, 255, 255, ${al})`; ctx.fill(); ctx.shadowColor = "transparent"; ctx.strokeStyle = sel ? "#2196f3" : "#5d5b4a"; ctx.lineWidth = (sel ? 2.5 : 1.5) / currentScale; if(n.type==="1") ctx.stroke(); else if(n.type==="2") { ctx.beginPath(); ctx.moveTo(n.x-n.width/2, n.y+n.height/2); ctx.lineTo(n.x+n.width/2, n.y+n.height/2); ctx.stroke(); } } 
+            else if (sel) { ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); ctx.shadowColor = "transparent"; ctx.strokeStyle = "rgba(33, 150, 243, 0.5)"; ctx.lineWidth = 1.5 / currentScale; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.setLineDash([]); }
+            
+            ctx.globalAlpha = 1.0; const defaultColor = COLORS[n.colorIndex || 0]; ctx.textBaseline="middle"; 
+            layoutData.lines.forEach((lineInfo, i) => {
+                let chunks = []; let currentChunk = null;
+                lineInfo.chars.forEach(sc => { if (!currentChunk) { currentChunk = { text: sc.char, bold: sc.bold, italic: sc.italic, underline: sc.underline, color: sc.color }; } else if (currentChunk.bold === sc.bold && currentChunk.italic === sc.italic && currentChunk.underline === sc.underline && currentChunk.color === sc.color) { currentChunk.text += sc.char; } else { chunks.push(currentChunk); currentChunk = { text: sc.char, bold: sc.bold, italic: sc.italic, underline: sc.underline, color: sc.color }; } });
+                if (currentChunk) chunks.push(currentChunk);
+                let trueLineWidth = 0; chunks.forEach(ck => { let fontStyle = (ck.bold ? "bold " : "") + (ck.italic ? "italic " : ""); ctx.font = `${fontStyle}${n.fontSize}px 'Malgun Gothic'`; ck.width = ctx.measureText(ck.text).width; trueLineWidth += ck.width; });
+                let curX = n.x - trueLineWidth / 2; if (n.textAlign === "left") curX = n.x - n.width / 2 + 15; if (n.textAlign === "right") curX = n.x + n.width / 2 - 15 - trueLineWidth;
+                ctx.textAlign = "left";
+                chunks.forEach(ck => {
+                    let fontStyle = (ck.bold ? "bold " : "") + (ck.italic ? "italic " : ""); ctx.font = `${fontStyle}${n.fontSize}px 'Malgun Gothic'`; ctx.fillStyle = ck.color || defaultColor; ctx.fillText(ck.text, curX, layoutData.startY + (i * layoutData.lh));
+                    if (ck.underline) { ctx.beginPath(); ctx.moveTo(curX, layoutData.startY + (i * layoutData.lh) + (n.fontSize * 0.45)); ctx.lineTo(curX + ck.width, layoutData.startY + (i * layoutData.lh) + (n.fontSize * 0.45)); ctx.strokeStyle = ck.color || defaultColor; ctx.lineWidth = 1.5; ctx.stroke(); } curX += ck.width;
+                });
+            });
+        }
+        if(sel && !["marker"].includes(n.type)) { ctx.fillStyle="#2196f3"; ctx.globalAlpha = 1.0; const s=7/currentScale; [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(c=>ctx.fillRect(n.x+(n.width/2)*c[0]-s/2, n.y+(n.height/2)*c[1]-s/2, s, s)); }
+        ctx.restore();
+    };
+
+    function render() {
+        ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle = bgSettings.color; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.save(); ctx.translate(currentOffset.x, currentOffset.y); ctx.scale(currentScale, currentScale);
+        if (bgSettings.showGrid) { ctx.beginPath(); ctx.strokeStyle="rgba(0,0,0,0.05)"; ctx.lineWidth=1/currentScale; const limitX = (window.innerWidth * WORLD_W_FACTOR) / 2, limitY = (window.innerHeight * WORLD_H_FACTOR) / 2; for(let x=-limitX; x<=limitX; x+=GRID_SIZE) { ctx.moveTo(x, -limitY); ctx.lineTo(x, limitY); } for(let y=-limitY; y<=limitY; y+=GRID_SIZE) { ctx.moveTo(-limitX, y); ctx.lineTo(limitX, y); } ctx.stroke(); }
+        if(isSelecting || isCreatingArea) { ctx.setLineDash(isCreatingArea ? [2, 2] : [5, 5]); ctx.fillStyle="rgba(33,150,243,0.1)"; ctx.strokeStyle="rgba(33,150,243,0.5)"; ctx.fillRect(selectionRect.x1, selectionRect.y1, selectionRect.x2-selectionRect.x1, selectionRect.y2-selectionRect.y1); ctx.strokeRect(selectionRect.x1, selectionRect.y1, selectionRect.x2-selectionRect.x1, selectionRect.y2-selectionRect.y1); ctx.setLineDash([]); }
+        const nonAreas = nodes.filter(n => n.type !== "area"), areas = nodes.filter(n => n.type === "area");
+        const containedAreas = areas.filter(a => areaContainsNodes(a, nonAreas)), emptyAreas = areas.filter(a => !containedAreas.includes(a));
+        containedAreas.forEach(drawNode); nonAreas.forEach(drawNode); emptyAreas.forEach(drawNode);
+        
+        edges.forEach(e => { 
+            if (e && e.from && e.to && !isNaN(e.from.x) && !isNaN(e.to.x)) { 
+                const isEdgeSel = (e === selectedEdge || (selectedNodes.includes(e.from) && selectedNodes.includes(e.to))); 
+                drawCurvedArrow(ctx, e.from, e.to, COLORS[e.colorIndex||0], false, isEdgeSel, e.manualStart, e.manualEnd, e.dirType, e.curveSide); 
+            } 
+        });
+        
+        if(activeImageData !== null && activeImageDimensions !== null) { let ghostImg = imageCache.get(activeImageData); let gw = activeImageDimensions.w, gh = activeImageDimensions.h; ctx.save(); ctx.globalAlpha = 0.5; if(ghostImg && ghostImg.complete) ctx.drawImage(ghostImg, currentWorldMouse.x - gw/2, currentWorldMouse.y - gh/2, gw, gh); else { ctx.setLineDash([5,5]); ctx.strokeStyle="#aaa"; ctx.strokeRect(currentWorldMouse.x - gw/2, currentWorldMouse.y - gh/2, gw, gh); } ctx.restore(); }
+        if(activeMarkerValue !== null) { ctx.save(); ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.arc(currentWorldMouse.x, currentWorldMouse.y, 15, 0, Math.PI * 2); ctx.fillStyle = COLORS[0]; ctx.fill(); ctx.strokeStyle = "#e0dcc5"; ctx.stroke(); ctx.fillStyle = "white"; ctx.font = "bold 13px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(activeMarkerValue, currentWorldMouse.x, currentWorldMouse.y); ctx.restore(); }
+        if(connectingNode) drawCurvedArrow(ctx, connectingNode, currentWorldMouse, "rgba(33,150,243,0.6)", true);
+        ctx.restore();
+    }
+
+    window.addEventListener('beforeunload', (e) => { if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; } });
+    function animate() { currentScale += (targetScale - currentScale) * LERP_FACTOR; currentOffset.x += (targetOffset.x - currentOffset.x) * LERP_FACTOR; currentOffset.y += (targetOffset.y - currentOffset.y) * LERP_FACTOR; zoomInfo.innerText = Math.round(currentScale * 100) + "%"; render(); requestAnimationFrame(animate); }
+    init();</script></body></html>
