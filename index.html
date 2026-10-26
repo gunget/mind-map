@@ -1144,52 +1144,89 @@
         const midX = (ps.f.x + ps.t.x) / 2, midY = (ps.f.y + ps.t.y) / 2, 
               dx = ps.t.x - ps.f.x, dy = ps.t.y - ps.f.y, 
               len = Math.hypot(dx, dy) || 1, 
-              offset = len * 0.10 * (curveSide || 1), 
+              offset = len * 0.11 * (curveSide || 1), 
               nx = -dy / len, ny = dx / len, 
               cpX = midX + nx * offset, cpY = midY + ny * offset; 
 
         ctx.save(); 
-        ctx.globalAlpha = isSelected ? 1.0 : 0.65; 
-        ctx.strokeStyle = (isSelected && !isChangingColor) ? "#2196f3" : color;
+        ctx.globalAlpha = isSelected ? 1.0 : 0.75; 
+        const arrowColor = (isSelected && !isChangingColor) ? "#2196f3" : color;
+        ctx.strokeStyle = arrowColor;
+        ctx.fillStyle = arrowColor;
 
-        if (!isGhost) { 
-            ctx.lineWidth = (isSelected ? 3.0 : 1.8) / currentScale;
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
-            ctx.beginPath();
-            ctx.moveTo(ps.f.x, ps.f.y);
-            ctx.quadraticCurveTo(cpX, cpY, ps.t.x, ps.t.y);
-            ctx.stroke();
-        } else { 
-            ctx.setLineDash([5,5]); 
-            ctx.lineWidth = 1.5/currentScale; 
+        if (isGhost) { 
+            ctx.setLineDash([5, 5]); 
+            ctx.lineWidth = 1.5 / currentScale; 
             ctx.beginPath(); 
             ctx.moveTo(ps.f.x, ps.f.y); 
             ctx.quadraticCurveTo(cpX, cpY, ps.t.x, ps.t.y); 
             ctx.stroke(); 
+        } else { 
+            // 캘리그라피형 테이퍼드 리본 곡선: 단 1회의 fill()로 GPU 드로우 콜을 최소화하면서 유려한 굵기 변화 구현
+            const steps = Math.min(14, Math.max(8, Math.floor(len / 18)));
+            const topPts = [];
+            const botPts = [];
+            const baseW = (isSelected ? 3.4 : 2.2) / currentScale;
+
+            for (let i = 0; i <= steps; i++) {
+                const tParam = i / steps;
+                const invT = 1 - tParam;
+                const bx = invT * invT * ps.f.x + 2 * invT * tParam * cpX + tParam * tParam * ps.t.x;
+                const by = invT * invT * ps.f.y + 2 * invT * tParam * cpY + tParam * tParam * ps.t.y;
+                
+                const tx = 2 * invT * (cpX - ps.f.x) + 2 * tParam * (ps.t.x - cpX);
+                const ty = 2 * invT * (cpY - ps.f.y) + 2 * tParam * (ps.t.y - cpY);
+                const tLen = Math.hypot(tx, ty) || 1;
+                const px = -ty / tLen;
+                const py = tx / tLen;
+
+                // 시작과 끝은 날렵하고(0.55x), 중앙은 도톰하게(1.25x) 흐르는 붓글씨형 두께
+                const halfW = (baseW * (0.55 + 0.70 * Math.sin(Math.PI * tParam))) / 2;
+
+                topPts.push({ x: bx + px * halfW, y: by + py * halfW });
+                botPts.push({ x: bx - px * halfW, y: by - py * halfW });
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(topPts[0].x, topPts[0].y);
+            for (let i = 1; i <= steps; i++) {
+                ctx.lineTo(topPts[i].x, topPts[i].y);
+            }
+            ctx.lineTo(botPts[steps].x, botPts[steps].y);
+            for (let i = steps - 1; i >= 0; i--) {
+                ctx.lineTo(botPts[i].x, botPts[i].y);
+            }
+            ctx.closePath();
+            ctx.fill();
         }
 
         const drawHead = (x, y, angle) => { 
-            const h = (isSelected ? 14 : 10) / currentScale; 
+            const h = (isSelected ? 15 : 11) / currentScale; 
             ctx.beginPath(); 
             ctx.moveTo(x, y); 
-            ctx.lineTo(x-h*Math.cos(angle-Math.PI/6), y-h*Math.sin(angle-Math.PI/6)); 
-            ctx.lineTo(x-h*Math.cos(angle+Math.PI/6), y-h*Math.sin(angle+Math.PI/6)); 
+            ctx.lineTo(x - h * Math.cos(angle - Math.PI / 6.5), y - h * Math.sin(angle - Math.PI / 6.5)); 
+            // 뒤쪽 날개가 부드럽게 유선형으로 파여 선과 조화롭게 연결되는 세련된 화살촉
+            ctx.quadraticCurveTo(
+                x - h * 0.70 * Math.cos(angle), 
+                y - h * 0.70 * Math.sin(angle), 
+                x - h * Math.cos(angle + Math.PI / 6.5), 
+                y - h * Math.sin(angle + Math.PI / 6.5)
+            ); 
             ctx.closePath(); 
-            ctx.fillStyle = ctx.strokeStyle; 
             ctx.fill(); 
         };
-        if (dir === 0 || dir === 2) drawHead(ps.t.x, ps.t.y, Math.atan2(ps.t.y-cpY, ps.t.x-cpX)); 
-        if (dir === 1 || dir === 2) drawHead(ps.f.x, ps.f.y, Math.atan2(ps.f.y-cpY, ps.f.x-cpX));
+
+        if (dir === 0 || dir === 2) drawHead(ps.t.x, ps.t.y, Math.atan2(ps.t.y - cpY, ps.t.x - cpX)); 
+        if (dir === 1 || dir === 2) drawHead(ps.f.x, ps.f.y, Math.atan2(ps.f.y - cpY, ps.f.x - cpX));
         
         if (isSelected && !isChangingColor) { 
             ctx.globalAlpha = 1.0; 
-            ctx.fillStyle="white"; 
-            ctx.strokeStyle="#2196f3"; 
-            ctx.lineWidth=2/currentScale; 
+            ctx.fillStyle = "white"; 
+            ctx.strokeStyle = "#2196f3"; 
+            ctx.lineWidth = 2 / currentScale; 
             [ps.f, ps.t].forEach(p => { 
                 ctx.beginPath(); 
-                ctx.arc(p.x, p.y, 5/currentScale, 0, Math.PI*2); 
+                ctx.arc(p.x, p.y, 5 / currentScale, 0, Math.PI * 2); 
                 ctx.fill(); 
                 ctx.stroke(); 
             }); 
