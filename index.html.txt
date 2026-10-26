@@ -10,10 +10,12 @@
       * 서브페이지 보관 시 90KB에 달하는 전체 HTML 엔진 중복 복제를 완전히 제거
       * 순수 데이터({ nodes, edges, bgSettings, projectId })만 가볍게 JSON으로 직렬화 및 Base64 인코딩 저장
       * 시트 추가 시 용량 증가를 기존 100KB~수 MB에서 수 KB 수준으로 90% 이상 획기적 절감
-    - [동적 셸 주입] '새창↗' 열기 시 최신 v80 뷰어 셸 실시간 주입
+    - [동적 셸 주입 & 읽기 모드] '새창↗' 열기 시 최신 v80 뷰어 셸 실시간 주입 및 혼동 방지 UI
       * 서브페이지를 새 탭에서 참고용으로 열 때, 현재 열려있는 최신 버전(v80)의 HTML 셸에
         해당 시트 데이터만 동적으로 결합하여 새 탭을 생성
-      * 과거 버전에서 저장된 시트라도 최신 v80 엔진(캘리그래피 화살표, 성능 최적화 등)으로 자동 실행
+      * 새 창에서는 페이지 목록 버튼을 숨기고 60% 투명도의 은은한 '[읽기 모드]' 배지를 표시하여 혼동 방지
+    - [텍스트 편집 편의성] 선택영역 글자색 단축키 (Ctrl+Q, 숫자 1~7)
+      * 텍스트 편집창에서 선택영역 지정 후 Ctrl+Q로 색상 팔레트 활성화 및 숫자 1~7키로 즉시 색상 적용 지원
     - [전환 반응성 극대화] 인메모리 상태 객체 직접 스왑
       * '교체' 및 '새로운 시트로 시작' 시 텍스트 파싱/정규식 파싱 단계 없이 메모리 상의
         순수 자바스크립트 객체로 즉시 상태를 전환하여 0ms에 가까운 즉각적인 반응성 확보
@@ -83,6 +85,10 @@
         #page-icon { font-size: 22px; cursor: pointer; background: rgba(255, 255, 255, 0.3); width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #e0dcc5; color: #7e7b64; filter: grayscale(100%); transition: transform 0.2s; }
         #page-icon:hover { transform: scale(1.1); }
         #page-popup { display: none; position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%); width: max-content; min-width: 420px; max-width: 80vw; background: rgba(255, 255, 255, 0.98); border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); border: 1px solid #e0dcc5; overflow: hidden; padding-bottom: 5px; }
+        #readonly-badge { display: none; font-size: 13px; font-weight: bold; color: #5d5b4a; background: rgba(255, 255, 255, 0.75); padding: 7px 18px; border-radius: 20px; border: 1px solid #e0dcc5; box-shadow: 0 4px 12px rgba(0,0,0,0.08); opacity: 0.6; pointer-events: none; letter-spacing: 1px; user-select: none; white-space: nowrap; }
+        body.readonly-mode #page-icon { display: none !important; }
+        body.readonly-mode #page-popup { display: none !important; }
+        body.readonly-mode #readonly-badge { display: block !important; }
         .page-popup-header { background: #f9f8f0; padding: 12px 15px; font-weight: bold; color: #4a483e; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .page-list { max-height: 250px; overflow-y: auto; }
         .page-list::-webkit-scrollbar { width: 6px; }
@@ -128,7 +134,7 @@
 <b>Ctrl + 키보드 상하(↑↓)</b><br>
 - 텍스트 서식 : 드래그 선택 후 
 <b>Ctrl+B, I, U</b><br>
-- 특정 색변경 : 드래그 선택 후 🎨 아이콘 (7색 지원)
+- 특정 색변경 : 드래그 선택 후 🎨 아이콘 또는 <b>Ctrl+Q 후 1~7</b> (7색 지원)
 <br>
 - 서식 취소 : 입력창 내에서 
 <b>Ctrl+Z</b><br>
@@ -182,6 +188,8 @@
                 <b style="color: #2196f3; font-size: 12px;">[버전 v80 변경 정보]</b><br>
                 • <b>멀티시트 초경량화</b>: 서브페이지 저장 시 전체 HTML 중복 저장을 제거하고 순수 데이터만 보관하여 파일 용량을 90% 이상 대폭 절감했습니다.<br>
                 • <b>동적 최신 엔진 주입</b>: 목록에서 [새창↗]으로 참고 시, 항상 최신 버전(v80)의 뷰어 환경으로 열려 최상의 렌더링을 제공합니다.<br>
+                • <b>새창 [읽기 모드] 배지</b>: 새 탭으로 연 창은 페이지 목록 버튼 대신 60% 투명도의 은은한 <b>[읽기 모드]</b>가 표시되어 메인 작업창과의 혼동을 방지합니다.<br>
+                • <b>선택영역 색상 단축키 (Ctrl+Q, 1~7)</b>: 텍스트 편집창에서 선택영역 지정 후 <b>Ctrl+Q</b>로 팔레트 활성화 및 <b>1~7</b> 키로 빠른 색상 적용이 가능합니다.<br>
                 • <b>시트 즉시 교체</b>: 인메모리 직접 전환으로 딜레이 없는 매끄러운 시트 전환을 지원합니다.<br>
                 • <b>캘리그래피 화살표 & 60fps 렌더링</b>: 단일 폴리곤 붓글씨 화살표 및 뷰포트 컬링으로 부드러운 작업 환경을 보장합니다.
             </div>
@@ -232,6 +240,7 @@
         <div class="page-add-btn" onclick="triggerSubpageUpload(event)">+ 페이지 추가 (다중 선택 가능)</div>
     </div>
     <div id="page-icon" onclick="togglePagePopup()" title="여러 페이지 관리">📑</div>
+    <div id="readonly-badge" style="display:none; font-size:13px; font-weight:bold; color:#5d5b4a; background:rgba(255, 255, 255, 0.65); padding:6px 14px; border-radius:18px; border:1px solid #e0dcc5; box-shadow:0 3px 8px rgba(0,0,0,0.06); opacity:0.6; pointer-events:none; letter-spacing:1px; user-select:none; white-space:nowrap;">[읽기 모드]</div>
     <input type="file" id="subpage-upload" multiple accept=".html" style="display:none" onchange="handleSubpageUpload(event)"></div><!-- 최근 파일 열기 모달 --><div id="recent-file-modal">
     <div class="recent-box">
         <h3 style="margin-top:0; color:#4a483e;">프로젝트 불러오기</h3>
@@ -257,15 +266,16 @@
             <button class="format-btn" onclick="applyFormat('__')" title="밑줄 (Ctrl+U)" style="text-decoration: underline;">U</button>
             
             <div style="position:relative; display:inline-block;">
-                <button class="format-btn" onclick="toggleColorPalette(event)" title="글자색 변경" style="margin-left:2px;">🎨</button>
-                <div id="color-palette" style="display: none; position: absolute; top: 30px; left: 0px; background: white; border: 1px solid #ddd; padding: 6px; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 5000; gap: 5px; flex-wrap: wrap; width: 110px;">
-                    <div onclick="applyColorFormat('#d32f2f')" style="width:20px; height:20px; background:#d32f2f; cursor:pointer; border-radius:3px;" title="빨강"></div>
-                    <div onclick="applyColorFormat('#f57c00')" style="width:20px; height:20px; background:#f57c00; cursor:pointer; border-radius:3px;" title="주황"></div>
-                    <div onclick="applyColorFormat('#fbc02d')" style="width:20px; height:20px; background:#fbc02d; cursor:pointer; border-radius:3px;" title="노랑"></div>
-                    <div onclick="applyColorFormat('#388e3c')" style="width:20px; height:20px; background:#388e3c; cursor:pointer; border-radius:3px;" title="초록"></div>
-                    <div onclick="applyColorFormat('#1976d2')" style="width:20px; height:20px; background:#1976d2; cursor:pointer; border-radius:3px;" title="파랑"></div>
-                    <div onclick="applyColorFormat('#303f9f')" style="width:20px; height:20px; background:#303f9f; cursor:pointer; border-radius:3px;" title="남색"></div>
-                    <div onclick="applyColorFormat('#7b1fa2')" style="width:20px; height:20px; background:#7b1fa2; cursor:pointer; border-radius:3px;" title="보라"></div>
+                <button class="format-btn" id="btn-color-palette" onclick="toggleColorPalette(event)" title="글자색 변경 (Ctrl+Q, 숫자 1~7)" style="margin-left:2px;">🎨</button>
+                <div id="color-palette" style="display: none; position: absolute; top: 30px; left: 0px; background: white; border: 1px solid #ddd; padding: 8px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.2); z-index: 5000; gap: 5px; flex-wrap: wrap; width: 125px;">
+                    <div onclick="applyColorFormat('#d32f2f')" style="width:24px; height:24px; background:#d32f2f; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="1: 빨강">1</div>
+                    <div onclick="applyColorFormat('#f57c00')" style="width:24px; height:24px; background:#f57c00; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="2: 주황">2</div>
+                    <div onclick="applyColorFormat('#fbc02d')" style="width:24px; height:24px; background:#fbc02d; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#333; font-size:11px; font-weight:bold;" title="3: 노랑">3</div>
+                    <div onclick="applyColorFormat('#388e3c')" style="width:24px; height:24px; background:#388e3c; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="4: 초록">4</div>
+                    <div onclick="applyColorFormat('#1976d2')" style="width:24px; height:24px; background:#1976d2; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="5: 파랑">5</div>
+                    <div onclick="applyColorFormat('#303f9f')" style="width:24px; height:24px; background:#303f9f; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="6: 남색">6</div>
+                    <div onclick="applyColorFormat('#7b1fa2')" style="width:24px; height:24px; background:#7b1fa2; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="7: 보라">7</div>
+                    <div style="font-size:10px; color:#888; width:100%; text-align:center; margin-top:3px; user-select:none;">숫자 1~7 선택</div>
                 </div>
             </div>
 
@@ -294,6 +304,7 @@
     /*DATA_HOLDER*/
     let projectId = "id_" + Date.now();
     let currentSheetName = "메인 작업";
+    let isReadOnlyMode = false;
     let nodes = [];
     let edges = [];
     let bgSettings = { color: "#fdfbf0", showGrid: true, modalZoom: 1.0 };
@@ -395,7 +406,7 @@
     }
 
     // [v80] DATA_HOLDER 생성 및 주입 유틸리티 함수
-    function serializeDataHolder(state, subPagesList, sheetName, pId, bg) {
+    function serializeDataHolder(state, subPagesList, sheetName, pId, bg, isReadOnly = false) {
         const safeArr = (subPagesList || []).map(p => ({
             name: p.name,
             data: encodeSubpageContent(JSON.stringify({
@@ -406,7 +417,7 @@
                 projectId: p.projectId || ""
             }))
         }));
-        return `/*DATA_HOLDER*/\n    let projectId = "${pId || projectId}";\n    let currentSheetName = "${sheetName || currentSheetName}";\n    let nodes = ${JSON.stringify(state.nodes)};\n    let edges = ${JSON.stringify(state.edges)};\n    let bgSettings = ${JSON.stringify(bg || bgSettings)};\n    let safeSubPages = ${JSON.stringify(safeArr)};\n    /*DATA_END*/`;
+        return `/*DATA_HOLDER*/\n    let projectId = "${pId || projectId}";\n    let currentSheetName = "${sheetName || currentSheetName}";\n    let isReadOnlyMode = ${isReadOnly ? 'true' : 'false'};\n    let nodes = ${JSON.stringify(state.nodes)};\n    let edges = ${JSON.stringify(state.edges)};\n    let bgSettings = ${JSON.stringify(bg || bgSettings)};\n    let safeSubPages = ${JSON.stringify(safeArr)};\n    /*DATA_END*/`;
     }
 
     function injectDataHolder(baseHtml, dataHolderStr) {
@@ -472,6 +483,34 @@
     const LERP_FACTOR = 0.35, GRID_SIZE = 40, HANDLE_SIZE = 10, COLORS = ['#2c2b25', '#d32f2f', '#1976d2', '#388e3c']; 
     const WORLD_W_FACTOR = 7, WORLD_H_FACTOR = 7;
 
+    const COLOR_SHORTCUT_MAP = {
+        '1': '#d32f2f',
+        '2': '#f57c00',
+        '3': '#fbc02d',
+        '4': '#388e3c',
+        '5': '#1976d2',
+        '6': '#303f9f',
+        '7': '#7b1fa2'
+    };
+
+    function applyReadOnlyUI() {
+        const pageIcon = document.getElementById('page-icon');
+        const pagePopup = document.getElementById('page-popup');
+        const badge = document.getElementById('readonly-badge');
+        if (pageIcon) pageIcon.style.display = 'none';
+        if (pagePopup) pagePopup.style.display = 'none';
+        if (badge) badge.style.display = 'block';
+        document.title = `${currentSheetName || '시트'} [읽기 모드] - 아이디어 블럭 커넥터 v80`;
+    }
+
+    function restoreNormalUI() {
+        const pageIcon = document.getElementById('page-icon');
+        const badge = document.getElementById('readonly-badge');
+        if (pageIcon) pageIcon.style.display = 'flex';
+        if (badge) badge.style.display = 'none';
+        document.title = `아이디어 블럭 커넥터 v80`;
+    }
+
     function init() {
         window.addEventListener('resize', resizeCanvas); resizeCanvas();
         targetOffset.x = currentOffset.x = window.innerWidth / 2;
@@ -479,6 +518,12 @@
         
         if (!projectId) projectId = "id_" + Date.now(); 
         
+        if (typeof isReadOnlyMode !== 'undefined' && isReadOnlyMode) {
+            applyReadOnlyUI();
+        } else {
+            restoreNormalUI();
+        }
+
         if (typeof safeSubPages !== 'undefined' && safeSubPages.length > 0) {
             try {
                 subPages = safeSubPages.map(p => parseSubpageItem(p)).filter(Boolean);
@@ -498,10 +543,29 @@
     function zoomModal(delta) { bgSettings.modalZoom = Math.max(0.7, Math.min((bgSettings.modalZoom || 1.0) + delta, 2.5)); applyModalZoom(); }
     function applyModalZoom() { document.getElementById('modal').style.transform = `scale(${bgSettings.modalZoom || 1.0})`; }
     function setAlign(align) { currentTextAlign = align; document.querySelectorAll('.align-btn').forEach(b => b.style.backgroundColor = '#f9f9f9'); document.getElementById('btn-align-' + align).style.backgroundColor = '#d0e8ff'; document.getElementById('node-input').focus(); }
-    function toggleColorPalette(e) { e.stopPropagation(); const p = document.getElementById('color-palette'); p.style.display = p.style.display === 'none' || p.style.display === '' ? 'flex' : 'none'; }
+    function toggleColorPalette(e) { if(e) e.stopPropagation(); clearTimeout(selectionTimeout); const p = document.getElementById('color-palette'); p.style.display = p.style.display === 'none' || p.style.display === '' ? 'flex' : 'none'; }
     function resetSelectionTimeout() { clearTimeout(selectionTimeout); selectionTimeout = setTimeout(() => { if (modalOverlay.style.display === 'flex' && nodeInput.selectionStart !== nodeInput.selectionEnd) { nodeInput.setSelectionRange(nodeInput.selectionEnd, nodeInput.selectionEnd); } }, 5000); }
     function applyFormat(tag) { const s = nodeInput.selectionStart, e = nodeInput.selectionEnd, v = nodeInput.value; const replacement = tag + v.substring(s, e) + tag; nodeInput.focus(); nodeInput.setSelectionRange(s, e); if (!document.execCommand('insertText', false, replacement)) { nodeInput.value = v.substring(0, s) + replacement + v.substring(e); } nodeInput.setSelectionRange(s, s + replacement.length); resetSelectionTimeout(); }
-    function applyColorFormat(color) { const s = nodeInput.selectionStart, e = nodeInput.selectionEnd, v = nodeInput.value; if (s === e) return; const replacement = `[c:${color}]` + v.substring(s, e) + `[/c]`; nodeInput.focus(); nodeInput.setSelectionRange(s, e); if (!document.execCommand('insertText', false, replacement)) { nodeInput.value = v.substring(0, s) + replacement + v.substring(e); } document.getElementById('color-palette').style.display = 'none'; nodeInput.setSelectionRange(s, s + replacement.length); resetSelectionTimeout(); }
+    function applyColorFormat(color) {
+        const s = nodeInput.selectionStart, e = nodeInput.selectionEnd, v = nodeInput.value;
+        if (s === e) {
+            showToast("색상을 적용할 글자를 먼저 마우스로 드래그해 선택하세요.");
+            const cp = document.getElementById('color-palette');
+            if (cp) cp.style.display = 'none';
+            nodeInput.focus();
+            return;
+        }
+        const replacement = `[c:${color}]` + v.substring(s, e) + `[/c]`;
+        nodeInput.focus();
+        nodeInput.setSelectionRange(s, e);
+        if (!document.execCommand('insertText', false, replacement)) {
+            nodeInput.value = v.substring(0, s) + replacement + v.substring(e);
+        }
+        const cp = document.getElementById('color-palette');
+        if (cp) cp.style.display = 'none';
+        nodeInput.setSelectionRange(s, s + replacement.length);
+        resetSelectionTimeout();
+    }
     function toggleImageDropdown() { const d = document.getElementById('image-dropdown'); d.style.display = (d.style.display === 'block') ? 'none' : 'block'; }
     function triggerImageUpload(mode) { imageInsertMode = mode; document.getElementById('image-upload').click(); document.getElementById('image-dropdown').style.display = 'none'; }
     
@@ -543,6 +607,9 @@
             
             const nMatch = inner.match(/let currentSheetName = "(.*?)";/);
             if (nMatch) state.currentSheetName = nMatch[1];
+
+            const roMatch = inner.match(/let isReadOnlyMode = (true|false);/);
+            if (roMatch) state.isReadOnlyMode = (roMatch[1] === 'true');
             
             const parseVar = (varName, nextVarName) => {
                 const startStr = `let ${varName} = `;
@@ -755,7 +822,7 @@
         showToast(`'${targetPage.name}'(으)로 화면 교체 완료!`);
     }
 
-    // [v80] 새창 열기: 현재 최신 버전의 뷰어 셸에 대상 시트의 데이터만 동적 결합하여 생성
+    // [v80] 새창 열기: 현재 최신 버전의 뷰어 셸에 대상 시트의 데이터만 동적 결합하여 생성 (읽기 모드 활성화)
     function openSubpage(index) {
         const page = subPages[index];
         if (!page) return;
@@ -771,8 +838,14 @@
         const targetBg = page.bgSettings || { color: "#fdfbf0", showGrid: true, modalZoom: 1.0 };
         const targetPid = page.projectId || ("id_" + Date.now());
 
-        const dataStr = serializeDataHolder({ nodes: targetNodes, edges: targetEdges }, [], page.name, targetPid, targetBg);
-        const cleanHtml = injectDataHolder(baseHtml, dataStr);
+        const dataStr = serializeDataHolder({ nodes: targetNodes, edges: targetEdges }, [], page.name, targetPid, targetBg, true);
+        let cleanHtml = injectDataHolder(baseHtml, dataStr);
+
+        // [읽기 모드 강제 적용] HTML 차원에서 body 클래스 및 타이틀 주입
+        cleanHtml = cleanHtml.replace(/<body([^>]*)>/i, '<body$1 class="readonly-mode">');
+        cleanHtml = cleanHtml.replace(/<title>.*?<\/title>/i, `<title>${page.name} [읽기 모드] - 아이디어 블럭 커넥터 v80</title>`);
+        cleanHtml = cleanHtml.replace('id="page-icon"', 'id="page-icon" style="display:none !important;"');
+        cleanHtml = cleanHtml.replace('id="readonly-badge" style="display:none;', 'id="readonly-badge" style="display:block !important;');
 
         const blob = new Blob([cleanHtml], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -1069,7 +1142,44 @@
         if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); saveProject(); return; }
         if (e.ctrlKey && e.key.toLowerCase() === 'o') { e.preventDefault(); showOpenModal(); return; } 
 
-        if (modalOverlay.style.display === 'flex') { if (e.key === 'Escape') { if (nodeInput.selectionStart !== nodeInput.selectionEnd) { nodeInput.setSelectionRange(nodeInput.selectionEnd, nodeInput.selectionEnd); clearTimeout(selectionTimeout); e.preventDefault(); } else { closeModal(false); } } return; }
+        if (modalOverlay.style.display === 'flex') {
+            const cp = document.getElementById('color-palette');
+            const isPaletteOpen = cp && cp.style.display === 'flex';
+
+            if (e.ctrlKey && e.key.toLowerCase() === 'q') {
+                e.preventDefault();
+                toggleColorPalette();
+                return;
+            }
+
+            if (e.ctrlKey && e.key.toLowerCase() === 'r') {
+                e.preventDefault(); // 모달 내 실수로 인한 브라우저 새로고침 방지
+                return;
+            }
+
+            if (isPaletteOpen && COLOR_SHORTCUT_MAP[e.key]) {
+                e.preventDefault();
+                applyColorFormat(COLOR_SHORTCUT_MAP[e.key]);
+                return;
+            }
+
+            if (e.key === 'Escape') {
+                if (isPaletteOpen) {
+                    cp.style.display = 'none';
+                    e.preventDefault();
+                    return;
+                }
+                if (nodeInput.selectionStart !== nodeInput.selectionEnd) {
+                    nodeInput.setSelectionRange(nodeInput.selectionEnd, nodeInput.selectionEnd);
+                    clearTimeout(selectionTimeout);
+                    e.preventDefault();
+                } else {
+                    closeModal(false);
+                }
+                return;
+            }
+            return;
+        }
         if (document.getElementById('recent-file-modal').style.display === 'flex') { if (e.key === 'Escape') { closeOpenModal(); } return; }
 
         if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); openNodeModal(currentWorldMouse); return; }
@@ -1107,6 +1217,37 @@
 
     nodeInput.addEventListener('keydown', (e) => {
         clearTimeout(selectionTimeout); 
+        const cp = document.getElementById('color-palette');
+        const isPaletteOpen = cp && cp.style.display === 'flex';
+
+        if (e.ctrlKey && e.key.toLowerCase() === 'q') {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleColorPalette();
+            return;
+        }
+
+        if (e.ctrlKey && e.key.toLowerCase() === 'r') {
+            e.preventDefault(); // 실수 새로고침 방지
+            e.stopPropagation();
+            return;
+        }
+
+        if (isPaletteOpen) {
+            if (COLOR_SHORTCUT_MAP[e.key]) {
+                e.preventDefault();
+                e.stopPropagation();
+                applyColorFormat(COLOR_SHORTCUT_MAP[e.key]);
+                return;
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                cp.style.display = 'none';
+                return;
+            }
+        }
+
         if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); closeModal(true); }
         else if (e.ctrlKey && e.key === 'ArrowUp') { e.preventDefault(); nodeTypeSelect.selectedIndex = (nodeTypeSelect.selectedIndex + 3) % 4; }
         else if (e.ctrlKey && e.key === 'ArrowDown') { e.preventDefault(); nodeTypeSelect.selectedIndex = (nodeTypeSelect.selectedIndex + 1) % 4; }
