@@ -294,6 +294,8 @@
     let currentFileHandle = null; 
     const DB_NAME = "IdeaBlockDB";
     let hasUnsavedChanges = false;
+    let needsRender = true;
+    function requestRender() { needsRender = true; }
 
     function generateId() { return 'n_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9); }
 
@@ -373,6 +375,7 @@
         }
 
         updateMarkerGrid();
+        requestRender();
         animate();
     }
 
@@ -397,7 +400,11 @@
                 if (imageInsertMode === 'cropped') { tempCanvas.width = 200; tempCanvas.height = 200; const size = Math.min(img.width, img.height); tCtx.drawImage(img, (img.width - size)/2, (img.height - size)/2, size, size, 0, 0, 200, 200); targetW = 200; targetH = 200; } 
                 else { tempCanvas.width = img.width; tempCanvas.height = img.height; tCtx.drawImage(img, 0, 0, img.width, img.height); targetW = img.width; targetH = img.height; }
                 activeImageData = tempCanvas.toDataURL('image/jpeg', 0.7); activeImageDimensions = { w: targetW, h: targetH };
-                const ghostImg = new Image(); ghostImg.src = activeImageData; imageCache.set(activeImageData, ghostImg);
+                const ghostImg = new Image(); 
+                ghostImg.onload = () => requestRender();
+                ghostImg.src = activeImageData; 
+                imageCache.set(activeImageData, ghostImg);
+                requestRender();
             };
             img.src = event.target.result;
         };
@@ -509,6 +516,7 @@
         currentSheetName = "새 작업_" + new Date().getHours() + "시" + new Date().getMinutes() + "분";
         
         renderPageList();
+        requestRender();
         showToast(`'${finalName}'(으)로 보관되고, 새 시트가 열렸습니다.`);
     }
 
@@ -637,7 +645,7 @@
     
     function captureState() { 
         nodes.forEach(n => { if (!n.id) n.id = generateId(); }); 
-        const nodeSnapshot = JSON.parse(JSON.stringify(nodes)); 
+        const nodeSnapshot = JSON.parse(JSON.stringify(nodes, (k, v) => k.startsWith('_') ? undefined : v)); 
         const edgeSnapshot = edges.map(e => { 
             return { ...e, fromId: e.from ? e.from.id : null, toId: e.to ? e.to.id : null, from: null, to: null }; 
         }).filter(e => e.fromId && e.toId); 
@@ -664,24 +672,25 @@
             return { ...e, from: fNode, to: tNode }; 
         }).filter(e => e.from && e.to); 
         selectedNodes = []; selectedEdge = null; 
+        requestRender();
     }
 
-    function saveHistory() { hasUnsavedChanges = true; historyStack.push(captureState()); if(historyStack.length > 50) historyStack.shift(); redoStack = []; }
-    function undo() { if (historyStack.length === 0) return; hasUnsavedChanges = true; redoStack.push(captureState()); applyState(historyStack.pop()); }
-    function redo() { if (redoStack.length === 0) return; hasUnsavedChanges = true; historyStack.push(captureState()); applyState(redoStack.pop()); }
-    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    function saveHistory() { hasUnsavedChanges = true; historyStack.push(captureState()); if(historyStack.length > 50) historyStack.shift(); redoStack = []; requestRender(); }
+    function undo() { if (historyStack.length === 0) return; hasUnsavedChanges = true; redoStack.push(captureState()); applyState(historyStack.pop()); requestRender(); }
+    function redo() { if (redoStack.length === 0) return; hasUnsavedChanges = true; historyStack.push(captureState()); applyState(redoStack.pop()); requestRender(); }
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; requestRender(); }
     function toWorld(sX, sY) { const rect = canvas.getBoundingClientRect(); return { x: (sX - rect.left - currentOffset.x) / currentScale, y: (sY - rect.top - currentOffset.y) / currentScale }; }
     function toggleHelp() { const t = document.getElementById('toolbar'); const isHidden = window.getComputedStyle(t).display === 'none'; t.style.display = isHidden ? 'block' : 'none'; }
     function toggleDropdown() { const d = document.getElementById('disk-dropdown'); d.style.display = (d.style.display === 'block') ? 'none' : 'block'; }
     function toggleBgPanel() { const p = document.getElementById('bg-panel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; }
-    function applyBgSettings() { hasUnsavedChanges = true; bgSettings.color = document.getElementById('bg-color-picker').value; bgSettings.showGrid = document.getElementById('grid-toggle').checked; toggleBgPanel(); }
-    function resetDefaultSettings() { bgSettings.color = "#fdfbf0"; bgSettings.showGrid = true; document.getElementById('bg-color-picker').value = "#fdfbf0"; document.getElementById('grid-toggle').checked = true; applyBgSettings(); }
+    function applyBgSettings() { hasUnsavedChanges = true; bgSettings.color = document.getElementById('bg-color-picker').value; bgSettings.showGrid = document.getElementById('grid-toggle').checked; toggleBgPanel(); requestRender(); }
+    function resetDefaultSettings() { bgSettings.color = "#fdfbf0"; bgSettings.showGrid = true; document.getElementById('bg-color-picker').value = "#fdfbf0"; document.getElementById('grid-toggle').checked = true; applyBgSettings(); requestRender(); }
 
     window.onclick = (e) => {
         if (isUploadingPages) return; 
         if (!e.target.matches('.disk-btn')) document.getElementById('disk-dropdown').style.display = 'none';
         if (!e.target.closest('#bg-settings-container')) document.getElementById('bg-panel').style.display = 'none';
-        if (!e.target.closest('#marker-menu')) { document.getElementById('marker-palette').style.display = 'none'; activeMarkerValue = null; updateMarkerGrid(); }
+        if (!e.target.closest('#marker-menu')) { document.getElementById('marker-palette').style.display = 'none'; activeMarkerValue = null; updateMarkerGrid(); requestRender(); }
         if (!e.target.closest('#color-palette') && !e.target.closest('button[title="글자색 변경"]')) { const cp = document.getElementById('color-palette'); if (cp) cp.style.display = 'none'; }
         if (!e.target.closest('#image-menu')) { const imgDrop = document.getElementById('image-dropdown'); if (imgDrop) imgDrop.style.display = 'none'; }
         if (!e.target.closest('#page-menu-container') && !e.target.closest('.action-del')) { const pp = document.getElementById('page-popup'); if (pp) pp.style.display = 'none'; }
@@ -691,23 +700,31 @@
         if (node) { editingNode = node; document.getElementById('modal-title').innerText = "아이디어 수정"; nodeInput.value = node.text; nodeTypeSelect.value = node.type; currentTextAlign = node.textAlign || "center"; }
         else { pendingPos = pos || currentWorldMouse; editingNode = null; document.getElementById('modal-title').innerText = "아이디어 구성"; nodeInput.value = ''; nodeTypeSelect.selectedIndex = 0; currentTextAlign = "center"; }
         setAlign(currentTextAlign); applyModalZoom(); modalOverlay.style.display = 'flex'; setTimeout(() => nodeInput.focus(), 50);
+        requestRender();
     }
 
     function closeModal(save) {
         if (save && nodeInput.value.trim()) {
             saveHistory(); const ty = nodeTypeSelect.value; let fs = 14, op = 1.0;
             if(ty === "1") fs = 21; else if(ty === "2") { fs = 17; op = 0.8; } else if(ty === "3") { fs = 14; op = 0.7; } else if(ty === "4") { fs = 14; op = 0.0; } 
-            if (editingNode) { editingNode.text = nodeInput.value; editingNode.textAlign = currentTextAlign; if (editingNode.type !== ty) { editingNode.fontSize = fs; editingNode.opacity = op; editingNode.width = (ty === "2") ? 280 : (ty === "3" || ty === "4" ? 420 : 140); } editingNode.type = ty; } 
+            if (editingNode) { 
+                delete editingNode._layoutCache;
+                editingNode.text = nodeInput.value; 
+                editingNode.textAlign = currentTextAlign; 
+                if (editingNode.type !== ty) { editingNode.fontSize = fs; editingNode.opacity = op; editingNode.width = (ty === "2") ? 280 : (ty === "3" || ty === "4" ? 420 : 140); } 
+                editingNode.type = ty; 
+            } 
             else { let bw = (ty === "2") ? 280 : (ty === "3" || ty === "4" ? 420 : 140); nodes.push({ id: generateId(), x: pendingPos.x, y: pendingPos.y, text: nodeInput.value, type: ty, width: bw, height: 60, fontSize: fs, colorIndex: 0, opacity: op, textAlign: currentTextAlign }); }
         }
-        editingNode = null; setTimeout(() => { modalOverlay.style.display = 'none'; }, 100);
+        editingNode = null; setTimeout(() => { modalOverlay.style.display = 'none'; requestRender(); }, 100);
+        requestRender();
     }
 
     function performPaste(clipData) {
         if (!clipData || !clipData.nodes) return;
         saveHistory();
         const nNodes = clipData.nodes.map(n => { 
-            let nn = JSON.parse(JSON.stringify(n)); 
+            let nn = JSON.parse(JSON.stringify(n, (k, v) => k.startsWith('_') ? undefined : v)); 
             nn.id = generateId(); 
             nn.x = currentWorldMouse.x + (n.x - clipData.cx); 
             nn.y = currentWorldMouse.y + (n.y - clipData.cy); 
@@ -721,12 +738,13 @@
             return ne; 
         });
         nodes.push(...nNodes); edges.push(...nEdges); selectedNodes = [...nNodes];
+        requestRender();
         showToast("블럭을 붙여넣었습니다.");
     }
 
     function copySelected() {
         if (selectedNodes.length === 0) return;
-        const cNodes = JSON.parse(JSON.stringify(selectedNodes)), cEdges = [];
+        const cNodes = JSON.parse(JSON.stringify(selectedNodes, (k, v) => k.startsWith('_') ? undefined : v)), cEdges = [];
         edges.forEach(e => { const fi = selectedNodes.indexOf(e.from), ti = selectedNodes.indexOf(e.to); if (fi !== -1 && ti !== -1) { let ne = JSON.parse(JSON.stringify(e)); ne.fi = fi; ne.ti = ti; cEdges.push(ne); } });
         let ax = 0, ay = 0; cNodes.forEach(n => { ax += n.x; ay += n.y; });
         
@@ -766,6 +784,7 @@
         targetScale = Math.min(canvas.width / cW, canvas.height / cH, 1.5);
         targetOffset.x = canvas.width / 2 - (minX + maxX) / 2 * targetScale;
         targetOffset.y = canvas.height / 2 - (minY + maxY) / 2 * targetScale;
+        requestRender();
     }
 
     async function saveProject() {
@@ -927,6 +946,7 @@
             saveHistory();
             if (selectedNodes.length > 0) { edges = edges.filter(ed => !selectedNodes.includes(ed.from) && !selectedNodes.includes(ed.to)); nodes = nodes.filter(n => !selectedNodes.includes(n)); selectedNodes = []; } 
             else if (selectedEdge) { edges = edges.filter(ed => ed !== selectedEdge); selectedEdge = null; }
+            requestRender();
         }
         
         if (selectedNodes.length === 1) {
@@ -936,12 +956,14 @@
             else if (e.key === 'ArrowLeft') n.colorIndex = ((n.colorIndex || 0) + 3) % 4;
             else if (e.key === 'ArrowUp') n.opacity = Math.min(1.0, (n.opacity || 1.0) + 0.1);
             else if (e.key === 'ArrowDown') n.opacity = Math.max(0.1, (n.opacity || 1.0) - 0.1);
+            requestRender();
         } else if (selectedEdge) {
             if (['ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowLeft'].includes(e.key)) saveHistory();
             if (e.ctrlKey && e.key === 'ArrowUp') { e.preventDefault(); selectedEdge.curveSide = -1; }
             else if (e.ctrlKey && e.key === 'ArrowDown') { e.preventDefault(); selectedEdge.curveSide = 1; }
             else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); selectedEdge.dirType = ((selectedEdge.dirType || 0) + (e.key === 'ArrowUp' ? 1 : 2)) % 3; }
             else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { isChangingColor = true; selectedEdge.colorIndex = ((selectedEdge.colorIndex || 0) + (e.key === 'ArrowRight' ? 1 : 3)) % 4; setTimeout(() => isChangingColor = false, 400); }
+            requestRender();
         }
     });
 
@@ -960,32 +982,67 @@
 
     canvas.addEventListener('mousedown', (e) => {
         const wp = toWorld(e.clientX, e.clientY); lastMousePos = { x: e.clientX, y: e.clientY };
-        if (e.button === 2) { isPanning = true; return; }
-        if(activeImageData !== null && activeImageDimensions !== null) { saveHistory(); nodes.push({ id: generateId(), x: wp.x, y: wp.y, type: "image", data: activeImageData, width: activeImageDimensions.w, height: activeImageDimensions.h, colorIndex: 0, opacity: 1.0 }); activeImageData = null; activeImageDimensions = null; return; }
-        if(activeMarkerValue !== null) { saveHistory(); nodes.push({ id: generateId(), x: wp.x, y: wp.y, type: "marker", value: activeMarkerValue, width: 30, height: 30, colorIndex: 0, opacity: 1.0 }); activeMarkerValue = null; updateMarkerGrid(); return; }
+        if (e.button === 2) { isPanning = true; requestRender(); return; }
+        if(activeImageData !== null && activeImageDimensions !== null) { saveHistory(); nodes.push({ id: generateId(), x: wp.x, y: wp.y, type: "image", data: activeImageData, width: activeImageDimensions.w, height: activeImageDimensions.h, colorIndex: 0, opacity: 1.0 }); activeImageData = null; activeImageDimensions = null; requestRender(); return; }
+        if(activeMarkerValue !== null) { saveHistory(); nodes.push({ id: generateId(), x: wp.x, y: wp.y, type: "marker", value: activeMarkerValue, width: 30, height: 30, colorIndex: 0, opacity: 1.0 }); activeMarkerValue = null; updateMarkerGrid(); requestRender(); return; }
         const hitNormal = nodes.slice().reverse().find(n => !["area"].includes(n.type) && wp.x > n.x-n.width/2 && wp.x < n.x+n.width/2 && wp.y > n.y-n.height/2 && wp.y < n.y+n.height/2);
         const hitArea = nodes.slice().reverse().find(n => n.type === "area" && wp.x > n.x-n.width/2-5 && wp.x < n.x+n.width/2+5 && wp.y > n.y-n.height/2-5 && wp.y < n.y+n.height/2+5);
 
-        if (e.shiftKey) { if (hitNormal) { connectingNode = hitNormal; return; } if (hitArea) { connectingNode = hitArea; return; } }
-        if (e.ctrlKey) { const anyHit = hitNormal || hitArea; if (anyHit) { if (selectedNodes.includes(anyHit)) { selectedNodes = selectedNodes.filter(n => n !== anyHit); } else { selectedNodes.push(anyHit); } draggingNodes = [...selectedNodes]; dragStartPos = wp; return; } else { isCreatingArea = true; selectionRect.x1 = selectionRect.x2 = wp.x; selectionRect.y1 = selectionRect.y2 = wp.y; return; } }
+        if (e.shiftKey) { if (hitNormal) { connectingNode = hitNormal; requestRender(); return; } if (hitArea) { connectingNode = hitArea; requestRender(); return; } }
+        if (e.ctrlKey) { const anyHit = hitNormal || hitArea; if (anyHit) { if (selectedNodes.includes(anyHit)) { selectedNodes = selectedNodes.filter(n => n !== anyHit); } else { selectedNodes.push(anyHit); } draggingNodes = [...selectedNodes]; dragStartPos = wp; requestRender(); return; } else { isCreatingArea = true; selectionRect.x1 = selectionRect.x2 = wp.x; selectionRect.y1 = selectionRect.y2 = wp.y; requestRender(); return; } }
 
-        if (selectedNodes.length === 1 && !["marker"].includes(selectedNodes[0].type)) { const h = getHandleAt(selectedNodes[0], wp.x, wp.y); if (h) { saveHistory(); resizingNode = selectedNodes[0]; resizeHandle = h; dragStartPos = wp; resizingNode.startState = { x: resizingNode.x, y: resizingNode.y, w: resizingNode.width, h: resizingNode.height }; return; } }
+        if (selectedNodes.length === 1 && !["marker"].includes(selectedNodes[0].type)) { const h = getHandleAt(selectedNodes[0], wp.x, wp.y); if (h) { saveHistory(); resizingNode = selectedNodes[0]; resizeHandle = h; dragStartPos = wp; resizingNode.startState = { x: resizingNode.x, y: resizingNode.y, w: resizingNode.width, h: resizingNode.height }; requestRender(); return; } }
 
-        if (selectedEdge) { const ps = getBestPoints(selectedEdge.from, selectedEdge.to, selectedEdge.manualStart, selectedEdge.manualEnd); if (Math.hypot(wp.x - ps.f.x, wp.y - ps.f.y) < 20/currentScale) { saveHistory(); draggingEdgeHandle = 'start'; return; } if (Math.hypot(wp.x - ps.t.x, wp.y - ps.t.y) < 20/currentScale) { saveHistory(); draggingEdgeHandle = 'end'; return; } }
+        if (selectedEdge) { const ps = getBestPoints(selectedEdge.from, selectedEdge.to, selectedEdge.manualStart, selectedEdge.manualEnd); if (Math.hypot(wp.x - ps.f.x, wp.y - ps.f.y) < 20/currentScale) { saveHistory(); draggingEdgeHandle = 'start'; requestRender(); return; } if (Math.hypot(wp.x - ps.t.x, wp.y - ps.t.y) < 20/currentScale) { saveHistory(); draggingEdgeHandle = 'end'; requestRender(); return; } }
         const eIdx = edges.findIndex(ed => distToSegment(wp, getBestPoints(ed.from, ed.to, ed.manualStart, ed.manualEnd).f, getBestPoints(ed.from, ed.to, ed.manualStart, ed.manualEnd).t) < 40 / currentScale);
         
         if (hitNormal) { saveHistory(); selectedEdge = null; if (!selectedNodes.includes(hitNormal)) selectedNodes = [hitNormal]; draggingNodes = [...selectedNodes]; dragStartPos = wp; } 
         else if (eIdx !== -1) { selectedNodes = []; selectedEdge = edges[eIdx]; } 
         else if (hitArea) { saveHistory(); selectedEdge = null; if (!selectedNodes.includes(hitArea)) selectedNodes = [hitArea]; draggingNodes = [...selectedNodes]; dragStartPos = wp; }
         else { selectedNodes = []; selectedEdge = null; isSelecting = true; selectionRect.x1 = selectionRect.x2 = wp.x; selectionRect.y1 = selectionRect.y2 = wp.y; }
+        requestRender();
     });
 
     window.addEventListener('mousemove', (e) => {
         const wp = toWorld(e.clientX, e.clientY); currentWorldMouse = wp;
-        if (isPanning) { targetOffset.x += (e.clientX - lastMousePos.x); targetOffset.y += (e.clientY - lastMousePos.y); const limitX = (window.innerWidth * WORLD_W_FACTOR) / 2 * targetScale, limitY = (window.innerHeight * WORLD_H_FACTOR) / 2 * targetScale; targetOffset.x = Math.min(Math.max(targetOffset.x, window.innerWidth/2 - limitX), window.innerWidth/2 + limitX); targetOffset.y = Math.min(Math.max(targetOffset.y, window.innerHeight/2 - limitY), window.innerHeight/2 + limitY); lastMousePos = { x: e.clientX, y: e.clientY }; }
-        else if (isSelecting || isCreatingArea) { selectionRect.x2 = wp.x; selectionRect.y2 = wp.y; }
-        else if (resizingNode) { const state = resizingNode.startState; if(state) { let dx = wp.x - dragStartPos.x, dy = wp.y - dragStartPos.y; let newW = state.w, newH = state.h, newX = state.x, newY = state.y; if (resizeHandle.includes('r')) { newW = Math.max(40, state.w + dx); newX = state.x + (newW - state.w) / 2; } else if (resizeHandle.includes('l')) { newW = Math.max(40, state.w - dx); newX = state.x - (newW - state.w) / 2; } if (resizeHandle.includes('b')) { newH = Math.max(20, state.h + dy); newY = state.y + (newH - state.h) / 2; } else if (resizeHandle.includes('t')) { newH = Math.max(20, state.h - dy); newY = state.y - (newH - state.h) / 2; } resizingNode.width = newW; resizingNode.height = newH; resizingNode.x = newX; resizingNode.y = newY; } }
-        else if (draggingEdgeHandle) { const target = nodes.slice().reverse().find(n => wp.x > n.x-n.width/2-20 && wp.x < n.x+n.width/2+20 && wp.y > n.y-n.height/2-20 && wp.y < n.y+n.height/2+20); if (target) { const side = getNearestSide(target, wp); if (draggingEdgeHandle === 'start') { selectedEdge.from = target; selectedEdge.manualStart = side; } else { selectedEdge.to = target; selectedEdge.manualEnd = side; } } } else if (draggingNodes.length > 0) { const dx = wp.x - dragStartPos.x, dy = wp.y - dragStartPos.y; draggingNodes.forEach(n => { n.x += dx; n.y += dy; }); dragStartPos = wp; }
+        if (isPanning) { 
+            targetOffset.x += (e.clientX - lastMousePos.x); targetOffset.y += (e.clientY - lastMousePos.y); 
+            const limitX = (window.innerWidth * WORLD_W_FACTOR) / 2 * targetScale, limitY = (window.innerHeight * WORLD_H_FACTOR) / 2 * targetScale; 
+            targetOffset.x = Math.min(Math.max(targetOffset.x, window.innerWidth/2 - limitX), window.innerWidth/2 + limitX); 
+            targetOffset.y = Math.min(Math.max(targetOffset.y, window.innerHeight/2 - limitY), window.innerHeight/2 + limitY); 
+            lastMousePos = { x: e.clientX, y: e.clientY }; 
+            requestRender();
+        }
+        else if (isSelecting || isCreatingArea) { selectionRect.x2 = wp.x; selectionRect.y2 = wp.y; requestRender(); }
+        else if (resizingNode) { 
+            const state = resizingNode.startState; 
+            if(state) { 
+                let dx = wp.x - dragStartPos.x, dy = wp.y - dragStartPos.y; 
+                let newW = state.w, newH = state.h, newX = state.x, newY = state.y; 
+                if (resizeHandle.includes('r')) { newW = Math.max(40, state.w + dx); newX = state.x + (newW - state.w) / 2; } 
+                else if (resizeHandle.includes('l')) { newW = Math.max(40, state.w - dx); newX = state.x - (newW - state.w) / 2; } 
+                if (resizeHandle.includes('b')) { newH = Math.max(20, state.h + dy); newY = state.y + (newH - state.h) / 2; } 
+                else if (resizeHandle.includes('t')) { newH = Math.max(20, state.h - dy); newY = state.y - (newH - state.h) / 2; } 
+                resizingNode.width = newW; resizingNode.height = newH; resizingNode.x = newX; resizingNode.y = newY; 
+                requestRender();
+            } 
+        }
+        else if (draggingEdgeHandle) { 
+            const target = nodes.slice().reverse().find(n => wp.x > n.x-n.width/2-20 && wp.x < n.x+n.width/2+20 && wp.y > n.y-n.height/2-20 && wp.y < n.y+n.height/2+20); 
+            if (target) { 
+                const side = getNearestSide(target, wp); 
+                if (draggingEdgeHandle === 'start') { selectedEdge.from = target; selectedEdge.manualStart = side; } 
+                else { selectedEdge.to = target; selectedEdge.manualEnd = side; } 
+            } 
+            requestRender();
+        } else if (draggingNodes.length > 0) { 
+            const dx = wp.x - dragStartPos.x, dy = wp.y - dragStartPos.y; 
+            draggingNodes.forEach(n => { n.x += dx; n.y += dy; }); 
+            dragStartPos = wp; 
+            requestRender();
+        } else if (activeImageData !== null || activeMarkerValue !== null || connectingNode) {
+            requestRender();
+        }
     });
 
     window.addEventListener('mouseup', () => {
@@ -993,12 +1050,14 @@
         if (isCreatingArea) { const w = Math.abs(selectionRect.x2 - selectionRect.x1), h = Math.abs(selectionRect.y2 - selectionRect.y1); if (w > 15 && h > 15) { saveHistory(); nodes.push({ id: generateId(), x: (selectionRect.x1 + selectionRect.x2)/2, y: (selectionRect.y1 + selectionRect.y2)/2, text: "", type: "area", width: w, height: h, fontSize: 14, colorIndex: 3, opacity: 0.7 }); } }
         if (connectingNode) { const hit = nodes.slice().reverse().find(n => n !== connectingNode && currentWorldMouse.x > n.x-n.width/2 && currentWorldMouse.x < n.x+n.width/2 && currentWorldMouse.y > n.y-n.height/2 && currentWorldMouse.y < n.y+n.height/2); if (hit) { saveHistory(); edges.push({ from: connectingNode, to: hit, colorIndex: 0, dirType: 0, curveSide: Math.random() > 0.5 ? 1 : -1 }); } }
         isPanning = isSelecting = isCreatingArea = false; draggingNodes = []; resizingNode = null; connectingNode = null; draggingEdgeHandle = false;
+        requestRender();
     });
 
     canvas.addEventListener('wheel', (e) => {
         e.preventDefault(); const wp = toWorld(e.clientX, e.clientY); let handled = false;
         if (selectedNodes.length === 1 && !["area", "marker", "image"].includes(selectedNodes[0].type)) { const n = selectedNodes[0]; if (wp.x > n.x - n.width/2 && wp.x < n.x + n.width/2 && wp.y > n.y - n.height/2 && wp.y < n.y + n.height/2) { saveHistory(); n.fontSize = Math.max(8, n.fontSize + (e.deltaY > 0 ? -1 : 1)); handled = true; } }
         if (!handled) { targetScale = Math.min(Math.max(0.05, targetScale - e.deltaY * 0.0006), 5.0); targetOffset.x = e.clientX - wp.x * targetScale; targetOffset.y = e.clientY - wp.y * targetScale; }
+        requestRender();
     }, { passive: false });
 
     function parseRichText(text) {
@@ -1010,9 +1069,17 @@
         } return result;
     }
 
-    function wrapStyledTextAndResize(context, node) {
-        if (["marker", "image"].includes(node.type)) return { lines: [], lh: 0, startY: 0 };
-        const padding = 28; const maxWidth = node.width - padding; const styledChars = parseRichText(node.text || "");
+    function getNodeLayout(context, node) {
+        if (["marker", "image", "area"].includes(node.type)) return null;
+        if (node._layoutCache &&
+            node._layoutCache.text === node.text &&
+            node._layoutCache.fontSize === node.fontSize &&
+            node._layoutCache.width === node.width &&
+            node._layoutCache.textAlign === (node.textAlign || "center")) {
+            return node._layoutCache;
+        }
+
+        const padding = 28; const maxWidth = Math.max(20, node.width - padding); const styledChars = parseRichText(node.text || "");
         const lines = []; let currentLine = []; let currentWidth = 0;
         for (let i = 0; i < styledChars.length; i++) {
             let sc = styledChars[i];
@@ -1020,8 +1087,45 @@
             let fontStyle = (sc.bold ? "bold " : "") + (sc.italic ? "italic " : ""); context.font = `${fontStyle}${node.fontSize}px 'Malgun Gothic'`; let w = context.measureText(sc.char).width;
             if (currentWidth + w > maxWidth && currentLine.length > 0) { lines.push({ chars: currentLine, width: currentWidth }); currentLine = [sc]; currentWidth = w; } else { currentLine.push(sc); currentWidth += w; }
         } lines.push({ chars: currentLine, width: currentWidth });
+
         const lh = node.fontSize * 1.5; const totalTextHeight = lines.length * lh; node.height = Math.max(60, totalTextHeight + padding);
-        return { lines, lh, startY: node.y - (totalTextHeight / 2) + (lh / 2) };
+
+        const preparedLines = lines.map(lineInfo => {
+            let chunks = []; let currentChunk = null;
+            lineInfo.chars.forEach(sc => {
+                if (!currentChunk) { currentChunk = { text: sc.char, bold: sc.bold, italic: sc.italic, underline: sc.underline, color: sc.color }; }
+                else if (currentChunk.bold === sc.bold && currentChunk.italic === sc.italic && currentChunk.underline === sc.underline && currentChunk.color === sc.color) { currentChunk.text += sc.char; }
+                else { chunks.push(currentChunk); currentChunk = { text: sc.char, bold: sc.bold, italic: sc.italic, underline: sc.underline, color: sc.color }; }
+            });
+            if (currentChunk) chunks.push(currentChunk);
+
+            let trueLineWidth = 0;
+            chunks.forEach(ck => {
+                let fontStyle = (ck.bold ? "bold " : "") + (ck.italic ? "italic " : "");
+                context.font = `${fontStyle}${node.fontSize}px 'Malgun Gothic'`;
+                ck.width = context.measureText(ck.text).width;
+                trueLineWidth += ck.width;
+            });
+            return { chunks, trueLineWidth };
+        });
+
+        const cache = {
+            text: node.text,
+            fontSize: node.fontSize,
+            width: node.width,
+            textAlign: node.textAlign || "center",
+            lh,
+            totalTextHeight,
+            preparedLines
+        };
+        node._layoutCache = cache;
+        return cache;
+    }
+
+    function wrapStyledTextAndResize(context, node) {
+        const layout = getNodeLayout(context, node);
+        if (!layout) return { lines: [], lh: 0, startY: 0 };
+        return { lines: layout.preparedLines, lh: layout.lh, startY: node.y - (layout.totalTextHeight / 2) + (layout.lh / 2) };
     }
 
     function getBestPoints(f, t, ms, me) {
@@ -1036,75 +1140,261 @@
     function drawCurvedArrow(ctx, f, t, color, isGhost = false, isSelected = false, ms, me, dir = 0, curveSide = 1) {
         if (!f || !t || f.x === undefined || t.x === undefined || isNaN(f.x) || isNaN(t.x)) return; 
         
-        const ps = getBestPoints(f, t, ms, me); const midX = (ps.f.x + ps.t.x) / 2, midY = (ps.f.y + ps.t.y) / 2, dx = ps.t.x - ps.f.x, dy = ps.t.y - ps.f.y, len = Math.hypot(dx, dy) || 1, offset = len * 0.10 * (curveSide || 1), nx = -dy / len, ny = dx / len, cpX = midX + nx * offset, cpY = midY + ny * offset; 
-        ctx.save(); ctx.globalAlpha = isSelected ? 1.0 : 0.65; ctx.strokeStyle = (isSelected && !isChangingColor) ? "#2196f3" : color;
-        if (!isGhost) { const segments = 20; for(let i=0; i<segments; i++) { const t1 = i/segments, t2 = (i+1)/segments, thick = 0.6 + Math.sin(Math.PI * t1) * 0.6; ctx.lineWidth = (isSelected ? 3 : 1.8) * thick / currentScale; const q1 = {x:(1-t1)**2*ps.f.x+2*(1-t1)*t1*cpX+t1**2*ps.t.x, y:(1-t1)**2*ps.f.y+2*(1-t1)*t1*cpY+t1**2*ps.t.y}, q2 = {x:(1-t2)**2*ps.f.x+2*(1-t2)*t2*cpX+t2**2*ps.t.x, y:(1-t2)**2*ps.f.y+2*(1-t2)*t2*cpY+t2**2*ps.t.y}; ctx.beginPath(); ctx.moveTo(q1.x, q1.y); ctx.lineTo(q2.x, q2.y); ctx.stroke(); } }
-        else { ctx.setLineDash([5,5]); ctx.lineWidth = 1.5/currentScale; ctx.beginPath(); ctx.moveTo(ps.f.x, ps.f.y); ctx.quadraticCurveTo(cpX, cpY, ps.t.x, ps.t.y); ctx.stroke(); }
-        const drawHead = (x, y, angle) => { const h = (isSelected ? 14 : 10) / currentScale; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x-h*Math.cos(angle-Math.PI/6), y-h*Math.sin(angle-Math.PI/6)); ctx.lineTo(x-h*Math.cos(angle+Math.PI/6), y-h*Math.sin(angle+Math.PI/6)); ctx.closePath(); ctx.fillStyle = ctx.strokeStyle; ctx.fill(); };
-        if (dir === 0 || dir === 2) drawHead(ps.t.x, ps.t.y, Math.atan2(ps.t.y-cpY, ps.t.x-cpX)); if (dir === 1 || dir === 2) drawHead(ps.f.x, ps.f.y, Math.atan2(ps.f.y-cpY, ps.f.x-cpX));
-        if(isSelected && !isChangingColor) { ctx.globalAlpha = 1.0; ctx.fillStyle="white"; ctx.strokeStyle="#2196f3"; ctx.lineWidth=2/currentScale; [ps.f, ps.t].forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 5/currentScale, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }); } ctx.restore();
+        const ps = getBestPoints(f, t, ms, me); 
+        const midX = (ps.f.x + ps.t.x) / 2, midY = (ps.f.y + ps.t.y) / 2, 
+              dx = ps.t.x - ps.f.x, dy = ps.t.y - ps.f.y, 
+              len = Math.hypot(dx, dy) || 1, 
+              offset = len * 0.10 * (curveSide || 1), 
+              nx = -dy / len, ny = dx / len, 
+              cpX = midX + nx * offset, cpY = midY + ny * offset; 
+
+        ctx.save(); 
+        ctx.globalAlpha = isSelected ? 1.0 : 0.65; 
+        ctx.strokeStyle = (isSelected && !isChangingColor) ? "#2196f3" : color;
+
+        if (!isGhost) { 
+            ctx.lineWidth = (isSelected ? 3.0 : 1.8) / currentScale;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            ctx.moveTo(ps.f.x, ps.f.y);
+            ctx.quadraticCurveTo(cpX, cpY, ps.t.x, ps.t.y);
+            ctx.stroke();
+        } else { 
+            ctx.setLineDash([5,5]); 
+            ctx.lineWidth = 1.5/currentScale; 
+            ctx.beginPath(); 
+            ctx.moveTo(ps.f.x, ps.f.y); 
+            ctx.quadraticCurveTo(cpX, cpY, ps.t.x, ps.t.y); 
+            ctx.stroke(); 
+        }
+
+        const drawHead = (x, y, angle) => { 
+            const h = (isSelected ? 14 : 10) / currentScale; 
+            ctx.beginPath(); 
+            ctx.moveTo(x, y); 
+            ctx.lineTo(x-h*Math.cos(angle-Math.PI/6), y-h*Math.sin(angle-Math.PI/6)); 
+            ctx.lineTo(x-h*Math.cos(angle+Math.PI/6), y-h*Math.sin(angle+Math.PI/6)); 
+            ctx.closePath(); 
+            ctx.fillStyle = ctx.strokeStyle; 
+            ctx.fill(); 
+        };
+        if (dir === 0 || dir === 2) drawHead(ps.t.x, ps.t.y, Math.atan2(ps.t.y-cpY, ps.t.x-cpX)); 
+        if (dir === 1 || dir === 2) drawHead(ps.f.x, ps.f.y, Math.atan2(ps.f.y-cpY, ps.f.x-cpX));
+        
+        if (isSelected && !isChangingColor) { 
+            ctx.globalAlpha = 1.0; 
+            ctx.fillStyle="white"; 
+            ctx.strokeStyle="#2196f3"; 
+            ctx.lineWidth=2/currentScale; 
+            [ps.f, ps.t].forEach(p => { 
+                ctx.beginPath(); 
+                ctx.arc(p.x, p.y, 5/currentScale, 0, Math.PI*2); 
+                ctx.fill(); 
+                ctx.stroke(); 
+            }); 
+        } 
+        ctx.restore();
     }
 
     function areaContainsNodes(area, allNodes) { return allNodes.some(n => n !== area && n.type !== "area" && n.x > area.x - area.width/2 && n.x < area.x + area.width/2 && n.y > area.y - area.height/2 && n.y < area.y + area.height/2); }
 
+    function isNodeInView(n, vX1, vY1, vX2, vY2) {
+        if (!n) return false;
+        const hw = (n.width || 60) / 2, hh = (n.height || 60) / 2;
+        return (n.x + hw >= vX1 && n.x - hw <= vX2 && n.y + hh >= vY1 && n.y - hh <= vY2);
+    }
+
+    function isEdgeInView(e, vX1, vY1, vX2, vY2) {
+        if (!e || !e.from || !e.to) return false;
+        const minX = Math.min(e.from.x, e.to.x) - 40, maxX = Math.max(e.from.x, e.to.x) + 40;
+        const minY = Math.min(e.from.y, e.to.y) - 40, maxY = Math.max(e.from.y, e.to.y) + 40;
+        return (maxX >= vX1 && minX <= vX2 && maxY >= vY1 && minY <= vY2);
+    }
+
     const drawNode = (n) => {
         if (!n) return; const sel = selectedNodes.includes(n); ctx.save();
-        if (n.type !== "area") { ctx.shadowColor="rgba(0,0,0,0.15)"; ctx.shadowBlur=10; ctx.shadowOffsetX=3; ctx.shadowOffsetY=3; }
+        if (n.type !== "area") { 
+            ctx.shadowColor = "rgba(0,0,0,0.12)"; 
+            ctx.shadowBlur = 4; 
+            ctx.shadowOffsetX = 2; 
+            ctx.shadowOffsetY = 2; 
+        }
         
         if (n.type === "marker") { 
-            ctx.beginPath(); ctx.arc(n.x, n.y, 15, 0, Math.PI * 2); ctx.fillStyle = COLORS[n.colorIndex || 0]; ctx.fill(); ctx.strokeStyle = sel ? "#2196f3" : "#e0dcc5"; ctx.lineWidth = sel ? 3 : 1.5; ctx.stroke(); ctx.fillStyle = "white"; ctx.font = "bold 13px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(n.value, n.x, n.y); 
+            ctx.beginPath(); ctx.arc(n.x, n.y, 15, 0, Math.PI * 2); ctx.fillStyle = COLORS[n.colorIndex || 0]; ctx.fill(); 
+            ctx.strokeStyle = sel ? "#2196f3" : "#e0dcc5"; ctx.lineWidth = sel ? 3 : 1.5; ctx.stroke(); 
+            ctx.fillStyle = "white"; ctx.font = "bold 13px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(n.value, n.x, n.y); 
         } 
         else if (n.type === "image") {
-            let img = imageCache.get(n.data); if (!img) { img = new Image(); img.onload = () => render(); img.src = n.data; imageCache.set(n.data, img); }
+            let img = imageCache.get(n.data); 
+            if (!img) { img = new Image(); img.onload = () => requestRender(); img.src = n.data; imageCache.set(n.data, img); }
             ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 8); ctx.fillStyle = "white"; ctx.fill();
-            ctx.save(); ctx.shadowColor = "transparent"; ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 8); ctx.clip(); if (img.complete) ctx.drawImage(img, n.x-n.width/2, n.y-n.height/2, n.width, n.height); ctx.restore();
+            ctx.save(); ctx.shadowColor = "transparent"; ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 8); ctx.clip(); 
+            if (img.complete) ctx.drawImage(img, n.x-n.width/2, n.y-n.height/2, n.width, n.height); 
+            ctx.restore();
             ctx.shadowColor = "transparent"; ctx.strokeStyle = sel ? "#2196f3" : "#cccccc"; ctx.lineWidth = 3; ctx.strokeRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height);
         }
-        else if (n.type === "area") { ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); ctx.fillStyle = `rgba(255, 255, 255, 0.05)`; ctx.fill(); ctx.shadowColor = "transparent"; ctx.setLineDash([2, 3]); ctx.strokeStyle = COLORS[n.colorIndex || 0]; ctx.globalAlpha = sel ? 1.0 : 0.7; ctx.lineWidth = (sel ? 4 : 2) / currentScale; ctx.stroke(); } 
+        else if (n.type === "area") { 
+            ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); ctx.fillStyle = `rgba(255, 255, 255, 0.05)`; ctx.fill(); 
+            ctx.shadowColor = "transparent"; ctx.setLineDash([2, 3]); ctx.strokeStyle = COLORS[n.colorIndex || 0]; ctx.globalAlpha = sel ? 1.0 : 0.7; ctx.lineWidth = (sel ? 4 : 2) / currentScale; ctx.stroke(); 
+        } 
         else { 
-            let layoutData = wrapStyledTextAndResize(ctx, n), al = n.opacity !== undefined ? n.opacity : 1.0; if(selectedNodes.length>1 && sel) al *= 0.5;
-            if (n.type !== "4") { ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); ctx.fillStyle = `rgba(255, 255, 255, ${al})`; ctx.fill(); ctx.shadowColor = "transparent"; ctx.strokeStyle = sel ? "#2196f3" : "#5d5b4a"; ctx.lineWidth = (sel ? 2.5 : 1.5) / currentScale; if(n.type==="1") ctx.stroke(); else if(n.type==="2") { ctx.beginPath(); ctx.moveTo(n.x-n.width/2, n.y+n.height/2); ctx.lineTo(n.x+n.width/2, n.y+n.height/2); ctx.stroke(); } } 
-            else if (sel) { ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); ctx.shadowColor = "transparent"; ctx.strokeStyle = "rgba(33, 150, 243, 0.5)"; ctx.lineWidth = 1.5 / currentScale; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.setLineDash([]); }
+            const layout = getNodeLayout(ctx, n);
+            let al = n.opacity !== undefined ? n.opacity : 1.0; 
+            if (selectedNodes.length > 1 && sel) al *= 0.5;
             
-            ctx.globalAlpha = 1.0; const defaultColor = COLORS[n.colorIndex || 0]; ctx.textBaseline="middle"; 
-            layoutData.lines.forEach((lineInfo, i) => {
-                let chunks = []; let currentChunk = null;
-                lineInfo.chars.forEach(sc => { if (!currentChunk) { currentChunk = { text: sc.char, bold: sc.bold, italic: sc.italic, underline: sc.underline, color: sc.color }; } else if (currentChunk.bold === sc.bold && currentChunk.italic === sc.italic && currentChunk.underline === sc.underline && currentChunk.color === sc.color) { currentChunk.text += sc.char; } else { chunks.push(currentChunk); currentChunk = { text: sc.char, bold: sc.bold, italic: sc.italic, underline: sc.underline, color: sc.color }; } });
-                if (currentChunk) chunks.push(currentChunk);
-                let trueLineWidth = 0; chunks.forEach(ck => { let fontStyle = (ck.bold ? "bold " : "") + (ck.italic ? "italic " : ""); ctx.font = `${fontStyle}${n.fontSize}px 'Malgun Gothic'`; ck.width = ctx.measureText(ck.text).width; trueLineWidth += ck.width; });
-                let curX = n.x - trueLineWidth / 2; if (n.textAlign === "left") curX = n.x - n.width / 2 + 15; if (n.textAlign === "right") curX = n.x + n.width / 2 - 15 - trueLineWidth;
-                ctx.textAlign = "left";
-                chunks.forEach(ck => {
-                    let fontStyle = (ck.bold ? "bold " : "") + (ck.italic ? "italic " : ""); ctx.font = `${fontStyle}${n.fontSize}px 'Malgun Gothic'`; ctx.fillStyle = ck.color || defaultColor; ctx.fillText(ck.text, curX, layoutData.startY + (i * layoutData.lh));
-                    if (ck.underline) { ctx.beginPath(); ctx.moveTo(curX, layoutData.startY + (i * layoutData.lh) + (n.fontSize * 0.45)); ctx.lineTo(curX + ck.width, layoutData.startY + (i * layoutData.lh) + (n.fontSize * 0.45)); ctx.strokeStyle = ck.color || defaultColor; ctx.lineWidth = 1.5; ctx.stroke(); } curX += ck.width;
+            if (n.type !== "4") { 
+                ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); 
+                ctx.fillStyle = `rgba(255, 255, 255, ${al})`; ctx.fill(); 
+                ctx.shadowColor = "transparent"; ctx.strokeStyle = sel ? "#2196f3" : "#5d5b4a"; ctx.lineWidth = (sel ? 2.5 : 1.5) / currentScale; 
+                if (n.type === "1") ctx.stroke(); 
+                else if (n.type === "2") { ctx.beginPath(); ctx.moveTo(n.x-n.width/2, n.y+n.height/2); ctx.lineTo(n.x+n.width/2, n.y+n.height/2); ctx.stroke(); } 
+            } else if (sel) { 
+                ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); 
+                ctx.shadowColor = "transparent"; ctx.strokeStyle = "rgba(33, 150, 243, 0.5)"; ctx.lineWidth = 1.5 / currentScale; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.setLineDash([]); 
+            }
+            
+            ctx.shadowColor = "transparent";
+            ctx.globalAlpha = 1.0; 
+            const defaultColor = COLORS[n.colorIndex || 0]; 
+            ctx.textBaseline = "middle"; 
+            
+            if (layout) {
+                const startY = n.y - (layout.totalTextHeight / 2) + (layout.lh / 2);
+                layout.preparedLines.forEach((lineInfo, i) => {
+                    let curX = n.x - lineInfo.trueLineWidth / 2; 
+                    if (n.textAlign === "left") curX = n.x - n.width / 2 + 15; 
+                    if (n.textAlign === "right") curX = n.x + n.width / 2 - 15 - lineInfo.trueLineWidth;
+                    ctx.textAlign = "left";
+                    lineInfo.chunks.forEach(ck => {
+                        let fontStyle = (ck.bold ? "bold " : "") + (ck.italic ? "italic " : ""); 
+                        ctx.font = `${fontStyle}${n.fontSize}px 'Malgun Gothic'`; 
+                        ctx.fillStyle = ck.color || defaultColor; 
+                        ctx.fillText(ck.text, curX, startY + (i * layout.lh));
+                        if (ck.underline) { 
+                            ctx.beginPath(); 
+                            ctx.moveTo(curX, startY + (i * layout.lh) + (n.fontSize * 0.45)); 
+                            ctx.lineTo(curX + ck.width, startY + (i * layout.lh) + (n.fontSize * 0.45)); 
+                            ctx.strokeStyle = ck.color || defaultColor; 
+                            ctx.lineWidth = 1.5; 
+                            ctx.stroke(); 
+                        } 
+                        curX += ck.width;
+                    });
                 });
-            });
+            }
         }
-        if(sel && !["marker"].includes(n.type)) { ctx.fillStyle="#2196f3"; ctx.globalAlpha = 1.0; const s=7/currentScale; [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(c=>ctx.fillRect(n.x+(n.width/2)*c[0]-s/2, n.y+(n.height/2)*c[1]-s/2, s, s)); }
+        if (sel && !["marker"].includes(n.type)) { 
+            ctx.shadowColor = "transparent";
+            ctx.fillStyle = "#2196f3"; 
+            ctx.globalAlpha = 1.0; 
+            const s = 7 / currentScale; 
+            [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(c => ctx.fillRect(n.x+(n.width/2)*c[0]-s/2, n.y+(n.height/2)*c[1]-s/2, s, s)); 
+        }
         ctx.restore();
     };
 
     function render() {
-        ctx.clearRect(0,0,canvas.width,canvas.height); ctx.fillStyle = bgSettings.color; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.save(); ctx.translate(currentOffset.x, currentOffset.y); ctx.scale(currentScale, currentScale);
-        if (bgSettings.showGrid) { ctx.beginPath(); ctx.strokeStyle="rgba(0,0,0,0.05)"; ctx.lineWidth=1/currentScale; const limitX = (window.innerWidth * WORLD_W_FACTOR) / 2, limitY = (window.innerHeight * WORLD_H_FACTOR) / 2; for(let x=-limitX; x<=limitX; x+=GRID_SIZE) { ctx.moveTo(x, -limitY); ctx.lineTo(x, limitY); } for(let y=-limitY; y<=limitY; y+=GRID_SIZE) { ctx.moveTo(-limitX, y); ctx.lineTo(limitX, y); } ctx.stroke(); }
-        if(isSelecting || isCreatingArea) { ctx.setLineDash(isCreatingArea ? [2, 2] : [5, 5]); ctx.fillStyle="rgba(33,150,243,0.1)"; ctx.strokeStyle="rgba(33,150,243,0.5)"; ctx.fillRect(selectionRect.x1, selectionRect.y1, selectionRect.x2-selectionRect.x1, selectionRect.y2-selectionRect.y1); ctx.strokeRect(selectionRect.x1, selectionRect.y1, selectionRect.x2-selectionRect.x1, selectionRect.y2-selectionRect.y1); ctx.setLineDash([]); }
+        ctx.clearRect(0,0,canvas.width,canvas.height); 
+        ctx.fillStyle = bgSettings.color; 
+        ctx.fillRect(0,0,canvas.width,canvas.height); 
+        ctx.save(); 
+        ctx.translate(currentOffset.x, currentOffset.y); 
+        ctx.scale(currentScale, currentScale);
+
+        // Viewport bounds in world coordinates with safe margin:
+        const margin = 100 / currentScale;
+        const vX1 = -currentOffset.x / currentScale - margin;
+        const vY1 = -currentOffset.y / currentScale - margin;
+        const vX2 = (canvas.width - currentOffset.x) / currentScale + margin;
+        const vY2 = (canvas.height - currentOffset.y) / currentScale + margin;
+
+        if (bgSettings.showGrid) { 
+            ctx.beginPath(); 
+            ctx.strokeStyle = "rgba(0,0,0,0.05)"; 
+            ctx.lineWidth = 1 / currentScale; 
+            const startX = Math.floor(vX1 / GRID_SIZE) * GRID_SIZE;
+            const endX = Math.ceil(vX2 / GRID_SIZE) * GRID_SIZE;
+            const startY = Math.floor(vY1 / GRID_SIZE) * GRID_SIZE;
+            const endY = Math.ceil(vY2 / GRID_SIZE) * GRID_SIZE;
+            for (let x = startX; x <= endX; x += GRID_SIZE) { ctx.moveTo(x, startY); ctx.lineTo(x, endY); } 
+            for (let y = startY; y <= endY; y += GRID_SIZE) { ctx.moveTo(startX, y); ctx.lineTo(endX, y); } 
+            ctx.stroke(); 
+        }
+
+        if (isSelecting || isCreatingArea) { 
+            ctx.setLineDash(isCreatingArea ? [2, 2] : [5, 5]); 
+            ctx.fillStyle = "rgba(33,150,243,0.1)"; 
+            ctx.strokeStyle = "rgba(33,150,243,0.5)"; 
+            ctx.fillRect(selectionRect.x1, selectionRect.y1, selectionRect.x2-selectionRect.x1, selectionRect.y2-selectionRect.y1); 
+            ctx.strokeRect(selectionRect.x1, selectionRect.y1, selectionRect.x2-selectionRect.x1, selectionRect.y2-selectionRect.y1); 
+            ctx.setLineDash([]); 
+        }
+
         const nonAreas = nodes.filter(n => n.type !== "area"), areas = nodes.filter(n => n.type === "area");
         const containedAreas = areas.filter(a => areaContainsNodes(a, nonAreas)), emptyAreas = areas.filter(a => !containedAreas.includes(a));
-        containedAreas.forEach(drawNode); nonAreas.forEach(drawNode); emptyAreas.forEach(drawNode);
+        
+        containedAreas.forEach(n => { if (isNodeInView(n, vX1, vY1, vX2, vY2)) drawNode(n); }); 
+        nonAreas.forEach(n => { if (isNodeInView(n, vX1, vY1, vX2, vY2)) drawNode(n); }); 
+        emptyAreas.forEach(n => { if (isNodeInView(n, vX1, vY1, vX2, vY2)) drawNode(n); });
         
         edges.forEach(e => { 
             if (e && e.from && e.to && !isNaN(e.from.x) && !isNaN(e.to.x)) { 
-                const isEdgeSel = (e === selectedEdge || (selectedNodes.includes(e.from) && selectedNodes.includes(e.to))); 
-                drawCurvedArrow(ctx, e.from, e.to, COLORS[e.colorIndex||0], false, isEdgeSel, e.manualStart, e.manualEnd, e.dirType, e.curveSide); 
+                if (isEdgeInView(e, vX1, vY1, vX2, vY2)) {
+                    const isEdgeSel = (e === selectedEdge || (selectedNodes.includes(e.from) && selectedNodes.includes(e.to))); 
+                    drawCurvedArrow(ctx, e.from, e.to, COLORS[e.colorIndex||0], false, isEdgeSel, e.manualStart, e.manualEnd, e.dirType, e.curveSide); 
+                }
             } 
         });
         
-        if(activeImageData !== null && activeImageDimensions !== null) { let ghostImg = imageCache.get(activeImageData); let gw = activeImageDimensions.w, gh = activeImageDimensions.h; ctx.save(); ctx.globalAlpha = 0.5; if(ghostImg && ghostImg.complete) ctx.drawImage(ghostImg, currentWorldMouse.x - gw/2, currentWorldMouse.y - gh/2, gw, gh); else { ctx.setLineDash([5,5]); ctx.strokeStyle="#aaa"; ctx.strokeRect(currentWorldMouse.x - gw/2, currentWorldMouse.y - gh/2, gw, gh); } ctx.restore(); }
-        if(activeMarkerValue !== null) { ctx.save(); ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.arc(currentWorldMouse.x, currentWorldMouse.y, 15, 0, Math.PI * 2); ctx.fillStyle = COLORS[0]; ctx.fill(); ctx.strokeStyle = "#e0dcc5"; ctx.stroke(); ctx.fillStyle = "white"; ctx.font = "bold 13px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(activeMarkerValue, currentWorldMouse.x, currentWorldMouse.y); ctx.restore(); }
-        if(connectingNode) drawCurvedArrow(ctx, connectingNode, currentWorldMouse, "rgba(33,150,243,0.6)", true);
+        if (activeImageData !== null && activeImageDimensions !== null) { 
+            let ghostImg = imageCache.get(activeImageData); 
+            let gw = activeImageDimensions.w, gh = activeImageDimensions.h; 
+            ctx.save(); ctx.globalAlpha = 0.5; 
+            if (ghostImg && ghostImg.complete) ctx.drawImage(ghostImg, currentWorldMouse.x - gw/2, currentWorldMouse.y - gh/2, gw, gh); 
+            else { ctx.setLineDash([5,5]); ctx.strokeStyle="#aaa"; ctx.strokeRect(currentWorldMouse.x - gw/2, currentWorldMouse.y - gh/2, gw, gh); } 
+            ctx.restore(); 
+        }
+        if (activeMarkerValue !== null) { 
+            ctx.save(); ctx.globalAlpha = 0.4; 
+            ctx.beginPath(); ctx.arc(currentWorldMouse.x, currentWorldMouse.y, 15, 0, Math.PI * 2); 
+            ctx.fillStyle = COLORS[0]; ctx.fill(); ctx.strokeStyle = "#e0dcc5"; ctx.stroke(); 
+            ctx.fillStyle = "white"; ctx.font = "bold 13px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; 
+            ctx.fillText(activeMarkerValue, currentWorldMouse.x, currentWorldMouse.y); 
+            ctx.restore(); 
+        }
+        if (connectingNode) drawCurvedArrow(ctx, connectingNode, currentWorldMouse, "rgba(33,150,243,0.6)", true);
         ctx.restore();
     }
 
     window.addEventListener('beforeunload', (e) => { if (hasUnsavedChanges) { e.preventDefault(); e.returnValue = ''; } });
-    function animate() { currentScale += (targetScale - currentScale) * LERP_FACTOR; currentOffset.x += (targetOffset.x - currentOffset.x) * LERP_FACTOR; currentOffset.y += (targetOffset.y - currentOffset.y) * LERP_FACTOR; zoomInfo.innerText = Math.round(currentScale * 100) + "%"; render(); requestAnimationFrame(animate); }
+    
+    function animate() { 
+        const scaleDiff = Math.abs(targetScale - currentScale);
+        const offsetXDiff = Math.abs(targetOffset.x - currentOffset.x);
+        const offsetYDiff = Math.abs(targetOffset.y - currentOffset.y);
+        const isInterpolating = scaleDiff > 0.0005 || offsetXDiff > 0.1 || offsetYDiff > 0.1;
+
+        if (isInterpolating) {
+            currentScale += (targetScale - currentScale) * LERP_FACTOR; 
+            currentOffset.x += (targetOffset.x - currentOffset.x) * LERP_FACTOR; 
+            currentOffset.y += (targetOffset.y - currentOffset.y) * LERP_FACTOR; 
+            zoomInfo.innerText = Math.round(currentScale * 100) + "%"; 
+            needsRender = true;
+        } else if (currentScale !== targetScale || currentOffset.x !== targetOffset.x || currentOffset.y !== targetOffset.y) {
+            currentScale = targetScale;
+            currentOffset.x = targetOffset.x;
+            currentOffset.y = targetOffset.y;
+            zoomInfo.innerText = Math.round(currentScale * 100) + "%";
+            needsRender = true;
+        }
+
+        if (needsRender) {
+            render(); 
+            needsRender = false;
+        }
+
+        requestAnimationFrame(animate); 
+    }
     init();</script></body></html>
