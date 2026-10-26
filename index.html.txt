@@ -160,19 +160,514 @@
         #toast-msg { display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(33, 150, 243, 0.9); color: white; padding: 12px 24px; border-radius: 30px; z-index: 6000; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
 
         canvas { display: block; cursor: crosshair; }
-        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 4000; justify-content: center; align-items: center; }
-        #modal { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 440px; transition: transform 0.2s ease-in-out; }
-        .format-toolbar { display: flex; gap: 5px; margin-bottom: 8px; align-items: center; }
-        .format-btn { padding: 4px 10px; border: 1px solid #ddd; background: #f9f9f9; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
-        .format-btn:hover { background: #eee; }
-        #modal textarea { width: 100%; height: 160px; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; box-sizing: border-box; outline: none; resize: none; font-family: inherit; line-height: 1.5; }
-        #modal select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; outline: none; }
+        /* 텍스트 편집기 모달 (디자이너급 모던 에디터 UI) */
+        #modal-overlay { 
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(35, 33, 26, 0.45); 
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 4000; 
+            justify-content: center; 
+            align-items: center; 
+            animation: modalFadeIn 0.18s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        #modal { 
+            background: #ffffff; 
+            padding: 22px 24px 18px 24px; 
+            border-radius: 16px; 
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.06); 
+            border: 1px solid rgba(224, 220, 197, 0.85); 
+            width: 540px; 
+            box-sizing: border-box; 
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1); 
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-title-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2196f3;
+        }
+        #modal-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+            color: #38362d;
+            letter-spacing: -0.3px;
+        }
+        .modal-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .modal-zoom-group {
+            display: flex;
+            align-items: center;
+            background: #f7f6f0;
+            border: 1px solid #e8e5d6;
+            border-radius: 6px;
+            padding: 1px 3px;
+        }
+        .modal-zoom-badge {
+            font-size: 11px;
+            font-weight: 700;
+            color: #6d6a59;
+            min-width: 36px;
+            text-align: center;
+            user-select: none;
+        }
+        .modal-zoom-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            color: #5d5b4a;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+        .modal-zoom-btn:hover {
+            background: #eae7d8;
+            color: #2196f3;
+        }
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #8c8979;
+            border-radius: 6px;
+            transition: all 0.15s;
+            line-height: 1;
+        }
+        .modal-close-btn:hover {
+            background: #f0eee2;
+            color: #d32f2f;
+        }
+
+        /* 툴바 UI */
+        .format-toolbar { 
+            display: flex; 
+            gap: 4px; 
+            align-items: center; 
+            background: #fbfbfa;
+            border: 1px solid #eae7dc;
+            border-radius: 8px;
+            padding: 4px 6px;
+            box-sizing: border-box;
+        }
+        .format-btn { 
+            height: 26px;
+            min-width: 26px;
+            padding: 0 6px; 
+            border: 1px solid transparent; 
+            background: transparent; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 12px; 
+            font-weight: 600; 
+            color: #555345;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            user-select: none;
+        }
+        .format-btn:hover { 
+            background: #eae7d8; 
+            color: #2c2b25;
+        }
+        .format-btn.active {
+            background: #4a483e !important;
+            color: #ffffff !important;
+        }
+        .format-divider {
+            width: 1px;
+            height: 16px;
+            background: #e2ded0;
+            margin: 0 4px;
+            flex-shrink: 0;
+        }
+        .format-type-select-wrap {
+            margin-left: auto;
+            position: relative;
+        }
+        #node-type { 
+            height: 26px; 
+            padding: 0 8px; 
+            border: 1px solid #ded9c6; 
+            background: #ffffff;
+            border-radius: 6px; 
+            font-size: 11.5px; 
+            font-weight: 600;
+            color: #4a483e;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.15s;
+        }
+        #node-type:hover, #node-type:focus {
+            border-color: #2196f3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.15);
+        }
+
+        /* 본문 텍스트 영역 */
+        #modal textarea { 
+            width: 100%; 
+            height: 220px; 
+            padding: 14px 16px; 
+            margin: 0; 
+            border: 1px solid #ded9c6; 
+            background: #ffffff;
+            border-radius: 10px; 
+            font-size: 15px; 
+            box-sizing: border-box; 
+            outline: none; 
+            resize: vertical; 
+            min-height: 180px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Malgun Gothic", sans-serif; 
+            line-height: 1.65; 
+            color: #2c2b25;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        #modal textarea:focus {
+            border-color: #2196f3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
+        }
+        #modal textarea::placeholder {
+            color: #b0ada0;
+            font-size: 14px;
+        }
+
+        /* 하단 단축키 힌트 및 버튼 */
+        .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 4px;
+        }
+        .modal-footer-hints {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .modal-hint-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 11px;
+            color: #7e7b64;
+        }
+        .modal-hint-badge kbd {
+            background: #f4f2e9;
+            border: 1px solid #e0dcc5;
+            border-radius: 4px;
+            padding: 1px 4px;
+            font-size: 10px;
+            font-family: inherit;
+            color: #555345;
+            font-weight: 600;
+        }
+        .modal-footer-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .modal-btn-cancel {
+            padding: 7px 14px;
+            border: 1px solid #e2ded0;
+            background: #faf9f5;
+            color: #6d6a59;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .modal-btn-cancel:hover {
+            background: #f0eee2;
+            color: #3c3a32;
+        }
+        .modal-btn-confirm {
+            padding: 7px 18px;
+            border: none;
+            background: #3e3c32;
+            color: #ffffff;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: 0 2px 6px rgba(62, 60, 50, 0.25);
+        }
+        .modal-btn-confirm:hover {
+            background: #25241e;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(62, 60, 50, 0.35);
+        }
+
+        /* 모달 내 글자색 팔레트 */
+        #color-palette { 
+            display: none; 
+            position: absolute; 
+            top: 32px; 
+            left: 0px; 
+            background: rgba(255, 255, 255, 0.98); 
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(224, 220, 197, 0.9); 
+            padding: 10px; 
+            border-radius: 10px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.18); 
+            z-index: 5000; 
+            gap: 6px; 
+            flex-wrap: wrap; 
+            width: 140px; 
+            box-sizing: border-box;
+        }
+        .color-dot-item {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            transition: transform 0.15s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .color-dot-item:hover {
+            transform: scale(1.18);
+        }
+
         #zoom-info { position: absolute; bottom: 15px; right: 20px; background: rgba(0,0,0,0.5); color: white; padding: 5px 12px; border-radius: 20px; font-size: 12px; }
+
+        /* 우클릭 미니 서식 팝업 (PowerPoint / Figma 스타일) */
+        #block-context-menu, #edge-context-menu {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 14px;
+            box-shadow: 0 16px 45px rgba(0, 0, 0, 0.2), 0 2px 10px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(224, 220, 197, 0.85);
+            padding: 12px 14px;
+            flex-direction: column;
+            gap: 10px;
+            width: 338px;
+            box-sizing: border-box;
+            user-select: none;
+            animation: bfmFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes bfmFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .bfm-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bfm-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #7e7b64;
+            width: 70px;
+            flex-shrink: 0;
+            white-space: nowrap;
+            letter-spacing: -0.5px;
+        }
+        .bfm-stepper {
+            display: flex;
+            align-items: center;
+            background: #f8f7f2;
+            border: 1px solid #e8e5d6;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .bfm-step-btn {
+            background: transparent;
+            border: none;
+            width: 26px;
+            height: 26px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #4a483e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+        .bfm-step-btn:hover {
+            background: #ebe8d8;
+            color: #2196f3;
+        }
+        .bfm-val-badge {
+            font-size: 11px;
+            font-weight: 700;
+            color: #4a483e;
+            min-width: 36px;
+            text-align: center;
+            padding: 0 4px;
+        }
+        .bfm-font-presets {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+        }
+        .bfm-mini-pill {
+            background: #f8f7f2;
+            border: 1px solid #e8e5d6;
+            border-radius: 4px;
+            padding: 3px 6px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #6d6a59;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .bfm-mini-pill:hover {
+            background: #ebe8d8;
+            color: #2196f3;
+        }
+        .bfm-pills {
+            display: flex;
+            gap: 4px;
+            flex-grow: 1;
+        }
+        .bfm-pill {
+            flex: 1;
+            padding: 4px 2px;
+            font-size: 10.5px;
+            font-weight: 600;
+            border-radius: 6px;
+            background: #f8f7f2;
+            border: 1px solid #e8e5d6;
+            color: #5d5b4a;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s ease;
+            position: relative;
+            white-space: nowrap;
+        }
+        .bfm-pill:hover {
+            background: #ebe8d8;
+        }
+        .bfm-pill.active {
+            background: #4a483e;
+            color: white;
+            border-color: #38372e;
+            box-shadow: 0 2px 6px rgba(74, 72, 62, 0.3);
+        }
+        .bfm-sub {
+            display: block;
+            font-size: 8px;
+            line-height: 1;
+            opacity: 0.8;
+            margin-top: 1px;
+        }
+        .bfm-slider-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 95px;
+            flex-shrink: 0;
+        }
+        #bfm-radius-slider {
+            width: 60px;
+            height: 4px;
+            accent-color: #4a483e;
+            cursor: pointer;
+        }
+        .bfm-slider-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #7e7b64;
+            width: 28px;
+            text-align: right;
+        }
+        .bfm-colors {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-grow: 1;
+        }
+        .bfm-color-swatch {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .bfm-color-swatch:hover {
+            transform: scale(1.18);
+        }
+        .bfm-color-swatch.active {
+            box-shadow: 0 0 0 2px #2196f3, 0 2px 6px rgba(0,0,0,0.25);
+            transform: scale(1.15);
+        }
+        .bfm-custom-picker {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #a1c4fd 100%);
+            overflow: hidden;
+            font-size: 10px;
+        }
+        .bfm-custom-picker input[type="color"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+        }
+        body.readonly-mode #block-context-menu, body.readonly-mode #edge-context-menu { display: none !important; }
     </style></head><body oncontextmenu="return false;"><div id="help-container" class="floating-ui">
     <div id="help-icon" onclick="toggleHelp()">?</div>
     <div id="toolbar">
         <span id="close-help" onclick="toggleHelp()">×</span>
-        <h4 style="margin:0 0 12px 0; color:#4a483e; font-size: 18px; border-bottom: 2px solid #e0dcc5; padding-bottom: 5px;">User Guide <span style="font-size:12px; color:#2196f3; font-weight:normal;">(v80)</span></h4>
+        <h4 style="margin:0 0 12px 0; color:#4a483e; font-size: 18px; border-bottom: 2px solid #e0dcc5; padding-bottom: 5px;">User Guide</h4>
         <div style="font-size: 11px; color: #7e7b64; line-height: 1.6;">
             <b>[입력창 편집]</b><br>
 - 창 활성화 : 마우스 왼쪽 더블클릭 또는 Shift+Enter
@@ -191,32 +686,22 @@
 <br><br>
             
             <b>[블럭 기능]</b> (선택 후)<br>
-- 글자색 변경 : 키보드 좌우(←→)
-<br>
-- 글자크기 변경 : 글자 위에서 마우스 휠 조정
-<br>
-- 배경 투명도 변경 : 키보드 상하(↑↓)
-<br>
-- 블럭 크기 변경 : 구석 핸들 드래그 (단방향 고정)
-<br>
-- 블럭 위치 변경 : 드래그 (다중 선택 시 함께 이동)
-<br>
-- 특정 영역 빗금 표시 : Ctrl + 마우스 왼쪽 드래그
-<br>
-- 특정 영역 색 바꾸기 : 선택 후 키보드 좌우(←→)
-<br><br>
+- 미니 서식창 : 블럭 위 <b>마우스 우클릭</b> (글자크기, 라운드, 테두리/배경색, 투명도)<br>
+- 글자크기 변경 : 미니 서식창의 <b>+ / − 버튼</b><br>
+- 특정 글자색 변경 : 글자 편집창(더블클릭) 내 드래그 후 🎨 또는 <b>Ctrl+Q 후 1~7</b><br>
+- 배경 투명도 변경 : 키보드 상하(↑↓)<br>
+- 블럭 크기 변경 : 구석 핸들 드래그 (단방향 고정)<br>
+- 블럭 위치 변경 : 드래그 (다중 선택 시 함께 이동)<br>
+- 특정 영역 빗금 표시 : Ctrl + 마우스 왼쪽 드래그<br>
+- 특정 영역 색 바꾸기 : 선택 후 우클릭 또는 키보드 좌우(←→)<br><br>
             
             <b>[화살표 기능]</b><br>
-- 생성 : 블럭/이미지/영역 위에서 
-<b>Shift+Drag</b><br>
-- 위치 변경 : 선택 후 끝 부분 핸들 드래그
-<br>
-- 화살표 색 변경 : 선택 후 키보드 좌우(←→)
-<br>
-- 화살표 방향 변경 : 선택 후 키보드 상하(↑↓)
-<br>
-- 화살표 굴곡 방향 : 선택 후 
-<b>Ctrl + 키보드 상하(↑↓)</b><br><br>
+- 생성 : 블럭/이미지/영역 위에서 <b>Shift+Drag</b><br>
+- 화살표 서식 : 화살표 위 <b>마우스 우클릭</b> (방향, 꺾임, 색상, 투명도)<br>
+- 위치 변경 : 선택 후 끝 부분 핸들 드래그<br>
+- 화살표 색 변경 : 선택 후 키보드 좌우(←→)<br>
+- 화살표 방향 변경 : 선택 후 키보드 상하(↑↓)<br>
+- 화살표 굴곡 방향 : 선택 후 <b>Ctrl + 키보드 상하(↑↓)</b><br><br>
             
             <b>[화면 조정 & 저장]</b><br>
 - 확대 축소 : 마우스 휠 / 화면 이동 : 우클릭 드래그
@@ -308,56 +793,218 @@
         <button class="recent-btn btn-blue" id="btn-load-recent" onclick="loadRecentFile()">이 파일 바로 열기</button>
         <button class="recent-btn btn-gray" onclick="triggerNativeOpen()">다른 위치에서 열기 (탐색기)</button>
         <div style="margin-top:15px;"><span onclick="closeOpenModal()" style="cursor:pointer; color:#999; font-size:12px; text-decoration:underline;">취소</span></div>
-    </div></div><!-- 토스트 알림 메시지 --><div id="toast-msg"></div><div id="zoom-info">100%</div><canvas id="canvas"></canvas><div id="modal-overlay">
-    <div id="modal">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <h3 id="modal-title" style="margin:0; font-size:18px; color:#4a483e;">아이디어 구성</h3>
-            <div>
-                <span style="font-size:11px; color:#888; margin-right:5px; font-weight:bold;">입력창 확대</span>
-                <button onclick="zoomModal(-0.1)" style="cursor:pointer; border:1px solid #ddd; background:#f9f9f9; border-radius:4px; padding:2px 8px; font-weight:bold; font-size:14px;">-</button>
-                <button onclick="zoomModal(0.1)" style="cursor:pointer; border:1px solid #ddd; background:#f9f9f9; border-radius:4px; padding:2px 8px; font-weight:bold; font-size:14px;">+</button>
+    </div></div><!-- 토스트 알림 메시지 --><div id="toast-msg"></div><div id="zoom-info">100%</div><canvas id="canvas"></canvas>
+    <!-- 우클릭 미니 서식 팝업 (PowerPoint / Figma 스타일) -->
+    <div id="block-context-menu" class="floating-format-menu" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
+        <!-- 1. 글자 크기 (- / +) -->
+        <div class="bfm-row">
+            <span class="bfm-label">글자 크기</span>
+            <div class="bfm-stepper">
+                <button class="bfm-step-btn" onclick="changeBlockFontSize(-2)" title="글자 작게 (클릭 시 실시간 반영)">−</button>
+                <span id="bfm-fontsize-val" class="bfm-val-badge">14px</span>
+                <button class="bfm-step-btn" onclick="changeBlockFontSize(+2)" title="글자 크게 (클릭 시 실시간 반영)">+</button>
+            </div>
+            <div class="bfm-font-presets">
+                <button class="bfm-mini-pill" onclick="setBlockFontSize(14)">기본</button>
+                <button class="bfm-mini-pill" onclick="setBlockFontSize(18)">중간</button>
+                <button class="bfm-mini-pill" onclick="setBlockFontSize(24)">크게</button>
+            </div>
+        </div>
+
+        <!-- 2. 모서리 라운드 (프리셋 + 슬라이더) -->
+        <div class="bfm-row">
+            <span class="bfm-label">모서리 곡률</span>
+            <div class="bfm-pills">
+                <button class="bfm-pill" data-radius="0" onclick="setBlockRadius(0)" title="직각 (0px)">0</button>
+                <button class="bfm-pill" data-radius="6" onclick="setBlockRadius(6)" title="약간 (6px)">6</button>
+                <button class="bfm-pill active" data-radius="12" onclick="setBlockRadius(12)" title="기본값 (12px)">12<span class="bfm-sub">기본</span></button>
+                <button class="bfm-pill" data-radius="20" onclick="setBlockRadius(20)" title="둥글게 (20px)">20</button>
+            </div>
+            <div class="bfm-slider-wrap" title="라운드 미세 조절">
+                <input type="range" id="bfm-radius-slider" min="0" max="40" step="1" value="12" oninput="onRadiusSliderInput(this.value)" onchange="saveHistory()">
+                <span id="bfm-radius-val" class="bfm-slider-label">12px</span>
+            </div>
+        </div>
+
+        <!-- 3. 블럭 테두리 색상 -->
+        <div class="bfm-row">
+            <span class="bfm-label">블럭 테두리</span>
+            <div class="bfm-colors">
+                <div class="bfm-color-swatch active" data-border-color="#5d5b4a" style="background:#5d5b4a;" onclick="setBlockBorderColor('#5d5b4a')" title="차콜 (기본)"></div>
+                <div class="bfm-color-swatch" data-border-color="#d32f2f" style="background:#d32f2f;" onclick="setBlockBorderColor('#d32f2f')" title="레드"></div>
+                <div class="bfm-color-swatch" data-border-color="#f57c00" style="background:#f57c00;" onclick="setBlockBorderColor('#f57c00')" title="오렌지"></div>
+                <div class="bfm-color-swatch" data-border-color="#fbc02d" style="background:#fbc02d;" onclick="setBlockBorderColor('#fbc02d')" title="옐로우"></div>
+                <div class="bfm-color-swatch" data-border-color="#388e3c" style="background:#388e3c;" onclick="setBlockBorderColor('#388e3c')" title="그린"></div>
+                <div class="bfm-color-swatch" data-border-color="#1976d2" style="background:#1976d2;" onclick="setBlockBorderColor('#1976d2')" title="블루"></div>
+                <div class="bfm-color-swatch" data-border-color="#7b1fa2" style="background:#7b1fa2;" onclick="setBlockBorderColor('#7b1fa2')" title="퍼플"></div>
+                <label class="bfm-color-swatch bfm-custom-picker" title="직접 테두리 색상 선택">
+                    <input type="color" id="bfm-border-color-input" value="#5d5b4a" oninput="setBlockBorderColor(this.value, false)" onchange="saveHistory()">
+                    <span>🎨</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 4. 테두리 투명도 (기본 30%) -->
+        <div class="bfm-row">
+            <span class="bfm-label">테두리 투명도</span>
+            <div class="bfm-pills">
+                <button class="bfm-pill" data-border-opacity="0" onclick="setBlockBorderOpacity(0.0)" title="투명 (0%)">0%</button>
+                <button class="bfm-pill" data-border-opacity="0.1" onclick="setBlockBorderOpacity(0.1)" title="은은하게 (10%)">10%</button>
+                <button class="bfm-pill active" data-border-opacity="0.3" onclick="setBlockBorderOpacity(0.3)" title="기본값 (30%)">30%<span class="bfm-sub">기본</span></button>
+                <button class="bfm-pill" data-border-opacity="0.6" onclick="setBlockBorderOpacity(0.6)" title="선명하게 (60%)">60%</button>
+                <button class="bfm-pill" data-border-opacity="1" onclick="setBlockBorderOpacity(1.0)" title="불투명 (100%)">100%</button>
+            </div>
+        </div>
+
+        <!-- 5. 블럭 배경 색상 -->
+        <div class="bfm-row">
+            <span class="bfm-label">블럭 배경색</span>
+            <div class="bfm-colors">
+                <div class="bfm-color-swatch active" data-bg-color="#ffffff" style="background:#ffffff; border:1px solid #ddd;" onclick="setBlockBgColor('#ffffff')" title="퓨어 화이트 (기본)"></div>
+                <div class="bfm-color-swatch" data-bg-color="#fdfbf0" style="background:#fdfbf0;" onclick="setBlockBgColor('#fdfbf0')" title="크림 아이보리"></div>
+                <div class="bfm-color-swatch" data-bg-color="#e8f5e9" style="background:#e8f5e9;" onclick="setBlockBgColor('#e8f5e9')" title="소프트 그린"></div>
+                <div class="bfm-color-swatch" data-bg-color="#e3f2fd" style="background:#e3f2fd;" onclick="setBlockBgColor('#e3f2fd')" title="소프트 블루"></div>
+                <div class="bfm-color-swatch" data-bg-color="#fff3e0" style="background:#fff3e0;" onclick="setBlockBgColor('#fff3e0')" title="소프트 웜오렌지"></div>
+                <div class="bfm-color-swatch" data-bg-color="#fce4ec" style="background:#fce4ec;" onclick="setBlockBgColor('#fce4ec')" title="소프트 로즈핑크"></div>
+                <div class="bfm-color-swatch" data-bg-color="#ede7f6" style="background:#ede7f6;" onclick="setBlockBgColor('#ede7f6')" title="소프트 라벤더"></div>
+                <label class="bfm-color-swatch bfm-custom-picker" title="직접 배경 색상 선택">
+                    <input type="color" id="bfm-bg-color-input" value="#ffffff" oninput="setBlockBgColor(this.value, false)" onchange="saveHistory()">
+                    <span>🎨</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 6. 배경 투명도 (기본 10%) -->
+        <div class="bfm-row">
+            <span class="bfm-label">배경 투명도</span>
+            <div class="bfm-pills">
+                <button class="bfm-pill" data-opacity="0" onclick="setBlockOpacity(0.0)" title="완전 투명 (0%)">0%</button>
+                <button class="bfm-pill active" data-opacity="0.1" onclick="setBlockOpacity(0.1)" title="기본값 (10%)">10%<span class="bfm-sub">기본</span></button>
+                <button class="bfm-pill" data-opacity="0.3" onclick="setBlockOpacity(0.3)" title="은은하게 (30%)">30%</button>
+                <button class="bfm-pill" data-opacity="0.6" onclick="setBlockOpacity(0.6)" title="선명하게 (60%)">60%</button>
+                <button class="bfm-pill" data-opacity="1" onclick="setBlockOpacity(1.0)" title="불투명 (100%)">100%</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 화살표 우클릭 미니 서식 팝업 -->
+    <div id="edge-context-menu" class="floating-format-menu" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
+        <!-- 1. 화살표 방향 -->
+        <div class="bfm-row">
+            <span class="bfm-label">화살표 방향</span>
+            <div class="bfm-pills">
+                <button class="bfm-pill active" data-edge-dir="0" onclick="setEdgeDir(0)" title="단방향 (시작 → 끝)">→ 단방향</button>
+                <button class="bfm-pill" data-edge-dir="1" onclick="setEdgeDir(1)" title="역방향 (끝 → 시작)">← 역방향</button>
+                <button class="bfm-pill" data-edge-dir="2" onclick="setEdgeDir(2)" title="양방향 (시작 ↔ 끝)">↔ 양방향</button>
+            </div>
+        </div>
+
+        <!-- 2. 꺾임 방향 (위/아래) -->
+        <div class="bfm-row">
+            <span class="bfm-label">꺾임 방향</span>
+            <div class="bfm-pills">
+                <button class="bfm-pill" data-edge-curve="-1" onclick="setEdgeCurveSide(-1)" title="위로 굴곡">⌒ 위로</button>
+                <button class="bfm-pill active" data-edge-curve="1" onclick="setEdgeCurveSide(1)" title="아래로 굴곡">︶ 아래로</button>
+            </div>
+        </div>
+
+        <!-- 3. 화살표 색상 -->
+        <div class="bfm-row">
+            <span class="bfm-label">화살표 색상</span>
+            <div class="bfm-colors">
+                <div class="bfm-color-swatch active" data-edge-color="#5d5b4a" style="background:#5d5b4a;" onclick="setEdgeColor('#5d5b4a')" title="차콜 (기본)"></div>
+                <div class="bfm-color-swatch" data-edge-color="#d32f2f" style="background:#d32f2f;" onclick="setEdgeColor('#d32f2f')" title="레드"></div>
+                <div class="bfm-color-swatch" data-edge-color="#f57c00" style="background:#f57c00;" onclick="setEdgeColor('#f57c00')" title="오렌지"></div>
+                <div class="bfm-color-swatch" data-edge-color="#fbc02d" style="background:#fbc02d;" onclick="setEdgeColor('#fbc02d')" title="옐로우"></div>
+                <div class="bfm-color-swatch" data-edge-color="#388e3c" style="background:#388e3c;" onclick="setEdgeColor('#388e3c')" title="그린"></div>
+                <div class="bfm-color-swatch" data-edge-color="#1976d2" style="background:#1976d2;" onclick="setEdgeColor('#1976d2')" title="블루"></div>
+                <div class="bfm-color-swatch" data-edge-color="#7b1fa2" style="background:#7b1fa2;" onclick="setEdgeColor('#7b1fa2')" title="퍼플"></div>
+                <label class="bfm-color-swatch bfm-custom-picker" title="직접 화살표 색상 선택">
+                    <input type="color" id="efm-color-input" value="#5d5b4a" oninput="setEdgeColor(this.value, false)" onchange="saveHistory()">
+                    <span>🎨</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- 4. 화살표 투명도 (기본 30%) -->
+        <div class="bfm-row">
+            <span class="bfm-label">화살표 투명도</span>
+            <div class="bfm-pills">
+                <button class="bfm-pill" data-edge-opacity="0.1" onclick="setEdgeOpacity(0.1)" title="은은하게 (10%)">10%</button>
+                <button class="bfm-pill active" data-edge-opacity="0.3" onclick="setEdgeOpacity(0.3)" title="기본값 (30%)">30%<span class="bfm-sub">기본</span></button>
+                <button class="bfm-pill" data-edge-opacity="0.6" onclick="setEdgeOpacity(0.6)" title="선명하게 (60%)">60%</button>
+                <button class="bfm-pill" data-edge-opacity="1" onclick="setEdgeOpacity(1.0)" title="완전 불투명 (100%)">100%</button>
+            </div>
+        </div>
+    </div><div id="modal-overlay" onclick="if(event.target===this) closeModal(false)">
+    <div id="modal" onclick="event.stopPropagation()">
+        <!-- 모달 헤더: 타이틀 + 줌 컨트롤 + 닫기 버튼 -->
+        <div class="modal-header">
+            <div class="modal-title-wrap">
+                <span class="modal-title-dot"></span>
+                <h3 id="modal-title">아이디어 구성</h3>
+            </div>
+            <div class="modal-header-actions">
+                <div class="modal-zoom-group" title="입력창 확대/축소">
+                    <button type="button" class="modal-zoom-btn" onclick="zoomModal(-0.1)" title="축소">−</button>
+                    <span id="modal-zoom-badge" class="modal-zoom-badge">100%</span>
+                    <button type="button" class="modal-zoom-btn" onclick="zoomModal(0.1)" title="확대">+</button>
+                </div>
+                <button type="button" class="modal-close-btn" onclick="closeModal(false)" title="닫기 (Esc)">×</button>
             </div>
         </div>
         
+        <!-- 모달 서식 툴바: 텍스트 서식 + 정렬 + 블록 타입 선택 -->
         <div class="format-toolbar" style="position:relative;">
-            <button class="format-btn" onclick="applyFormat('**')" title="굵게 (Ctrl+B)">B</button>
-            <button class="format-btn" onclick="applyFormat('*')" title="기울임 (Ctrl+I)" style="font-style: italic;">I</button>
-            <button class="format-btn" onclick="applyFormat('__')" title="밑줄 (Ctrl+U)" style="text-decoration: underline;">U</button>
+            <button type="button" class="format-btn" onclick="applyFormat('**')" title="굵게 (Ctrl+B)"><b>B</b></button>
+            <button type="button" class="format-btn" onclick="applyFormat('*')" title="기울임 (Ctrl+I)" style="font-style: italic;">I</button>
+            <button type="button" class="format-btn" onclick="applyFormat('__')" title="밑줄 (Ctrl+U)" style="text-decoration: underline;">U</button>
             
-            <div style="position:relative; display:inline-block;">
-                <button class="format-btn" id="btn-color-palette" onclick="toggleColorPalette(event)" title="글자색 변경 (Ctrl+Q, 숫자 1~7)" style="margin-left:2px;">🎨</button>
-                <div id="color-palette" style="display: none; position: absolute; top: 30px; left: 0px; background: white; border: 1px solid #ddd; padding: 8px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.2); z-index: 5000; gap: 5px; flex-wrap: wrap; width: 125px;">
-                    <div onclick="applyColorFormat('#d32f2f')" style="width:24px; height:24px; background:#d32f2f; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="1: 빨강">1</div>
-                    <div onclick="applyColorFormat('#f57c00')" style="width:24px; height:24px; background:#f57c00; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="2: 주황">2</div>
-                    <div onclick="applyColorFormat('#fbc02d')" style="width:24px; height:24px; background:#fbc02d; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#333; font-size:11px; font-weight:bold;" title="3: 노랑">3</div>
-                    <div onclick="applyColorFormat('#388e3c')" style="width:24px; height:24px; background:#388e3c; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="4: 초록">4</div>
-                    <div onclick="applyColorFormat('#1976d2')" style="width:24px; height:24px; background:#1976d2; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="5: 파랑">5</div>
-                    <div onclick="applyColorFormat('#303f9f')" style="width:24px; height:24px; background:#303f9f; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="6: 남색">6</div>
-                    <div onclick="applyColorFormat('#7b1fa2')" style="width:24px; height:24px; background:#7b1fa2; cursor:pointer; border-radius:4px; display:flex; align-items:center; justify-content:center; color:white; font-size:11px; font-weight:bold;" title="7: 보라">7</div>
+            <div style="position:relative; display:inline-flex; align-items:center;">
+                <button type="button" class="format-btn" id="btn-color-palette" onclick="toggleColorPalette(event)" title="글자색 변경 (Ctrl+Q, 숫자 1~7)">🎨</button>
+                <div id="color-palette">
+                    <div class="color-dot-item" onclick="applyColorFormat('#d32f2f')" style="background:#d32f2f;" title="1: 레드">1</div>
+                    <div class="color-dot-item" onclick="applyColorFormat('#f57c00')" style="background:#f57c00;" title="2: 오렌지">2</div>
+                    <div class="color-dot-item" onclick="applyColorFormat('#fbc02d')" style="background:#fbc02d; color:#333;" title="3: 옐로우">3</div>
+                    <div class="color-dot-item" onclick="applyColorFormat('#388e3c')" style="background:#388e3c;" title="4: 그린">4</div>
+                    <div class="color-dot-item" onclick="applyColorFormat('#1976d2')" style="background:#1976d2;" title="5: 블루">5</div>
+                    <div class="color-dot-item" onclick="applyColorFormat('#303f9f')" style="background:#303f9f;" title="6: 네이비">6</div>
+                    <div class="color-dot-item" onclick="applyColorFormat('#7b1fa2')" style="background:#7b1fa2;" title="7: 퍼플">7</div>
                     <div style="font-size:10px; color:#888; width:100%; text-align:center; margin-top:3px; user-select:none;">숫자 1~7 선택</div>
                 </div>
             </div>
 
-            <span style="display:inline-block; width:1px; height:15px; background:#ddd; margin:0 8px;"></span>
+            <span class="format-divider"></span>
             
-            <button class="format-btn align-btn" id="btn-align-left" onclick="setAlign('left')" title="왼쪽 정렬">좌</button>
-            <button class="format-btn align-btn" id="btn-align-center" onclick="setAlign('center')" title="가운데 정렬">중</button>
-            <button class="format-btn align-btn" id="btn-align-right" onclick="setAlign('right')" title="오른쪽 정렬">우</button>
+            <button type="button" class="format-btn align-btn" id="btn-align-left" onclick="setAlign('left')" title="왼쪽 정렬">좌</button>
+            <button type="button" class="format-btn align-btn active" id="btn-align-center" onclick="setAlign('center')" title="가운데 정렬">중</button>
+            <button type="button" class="format-btn align-btn" id="btn-align-right" onclick="setAlign('right')" title="오른쪽 정렬">우</button>
+
+            <!-- 블럭 타입 선택 드롭다운 (툴바 우측에 일체형으로 배치하여 본문 공간 최대 확보) -->
+            <div class="format-type-select-wrap">
+                <select id="node-type" title="블록 스타일 선택 (Ctrl+↑↓)">
+                    <option value="1">📦 카드 블록</option>
+                    <option value="2">━ 밑줄 스타일</option>
+                    <option value="3"># 해시태그</option>
+                    <option value="4">📄 투명 텍스트</option>
+                </select>
+            </div>
         </div>
         
-        <textarea id="node-input" placeholder="내용을 입력하세요 (Shift+Enter: 확정)"></textarea>
-        <div style="font-size: 11px; color: #2196f3; margin-bottom: 5px; font-weight: bold;">
-- Ctrl + 키보드 위아래(↑↓) 키로 블록 형태를 바꿀 수 있습니다.
-        </div>
-        <select id="node-type">
-            <option value="1">1단계: 사각형 블록</option>
-            <option value="2">2단계: 밑줄 스타일</option>
-            <option value="3">3단계: 해시태그 스타일</option>
-            <option value="4">4단계: 투명 텍스트</option>
-        </select>
-        <div style="display:flex; gap:10px;">
-            <button onclick="closeModal(true)" style="flex:1; padding:12px; background:#4a483e; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">확정 (Shift+Enter)</button>
-            <button onclick="closeModal(false)" style="flex:1; padding:12px; border:1px solid #ddd; border-radius:6px; cursor:pointer;">취소</button>
+        <!-- 큼직하고 시원한 텍스트 작성 히어로 영역 -->
+        <textarea id="node-input" placeholder="아이디어나 메모를 자유롭게 입력하세요... (Shift+Enter: 확정)"></textarea>
+        
+        <!-- 모달 푸터: 직관적인 단축키 힌트 뱃지 & 디자이너 감성의 컴팩트 버튼 -->
+        <div class="modal-footer">
+            <div class="modal-footer-hints">
+                <span class="modal-hint-badge"><kbd>Shift</kbd>+<kbd>Enter</kbd> 확정</span>
+                <span class="modal-hint-badge"><kbd>Ctrl</kbd>+<kbd>↑↓</kbd> 형태변경</span>
+                <span class="modal-hint-badge"><kbd>Ctrl</kbd>+<kbd>Q</kbd> 색상</span>
+            </div>
+            <div class="modal-footer-actions">
+                <button type="button" class="modal-btn-cancel" onclick="closeModal(false)">취소</button>
+                <button type="button" class="modal-btn-confirm" onclick="closeModal(true)">확정</button>
+            </div>
         </div>
     </div></div><script>
     /*DATA_HOLDER*/
@@ -603,9 +1250,27 @@
         animate();
     }
 
-    function zoomModal(delta) { bgSettings.modalZoom = Math.max(0.7, Math.min((bgSettings.modalZoom || 1.0) + delta, 2.5)); applyModalZoom(); }
-    function applyModalZoom() { document.getElementById('modal').style.transform = `scale(${bgSettings.modalZoom || 1.0})`; }
-    function setAlign(align) { currentTextAlign = align; document.querySelectorAll('.align-btn').forEach(b => b.style.backgroundColor = '#f9f9f9'); document.getElementById('btn-align-' + align).style.backgroundColor = '#d0e8ff'; document.getElementById('node-input').focus(); }
+    function zoomModal(delta) { bgSettings.modalZoom = Math.max(0.7, Math.min(Math.round(((bgSettings.modalZoom || 1.0) + delta) * 10) / 10, 2.5)); applyModalZoom(); }
+    function applyModalZoom() {
+        const zoom = bgSettings.modalZoom || 1.0;
+        const modal = document.getElementById('modal');
+        if (modal) modal.style.transform = `scale(${zoom})`;
+        const badge = document.getElementById('modal-zoom-badge');
+        if (badge) badge.innerText = Math.round(zoom * 100) + '%';
+    }
+    function setAlign(align) {
+        currentTextAlign = align;
+        document.querySelectorAll('.align-btn').forEach(b => {
+            b.classList.remove('active');
+            b.style.backgroundColor = '';
+            b.style.color = '';
+        });
+        const activeBtn = document.getElementById('btn-align-' + align);
+        if (activeBtn) {
+            activeBtn.classList.add('active');
+        }
+        document.getElementById('node-input').focus();
+    }
     function toggleColorPalette(e) { if(e) e.stopPropagation(); clearTimeout(selectionTimeout); const p = document.getElementById('color-palette'); p.style.display = p.style.display === 'none' || p.style.display === '' ? 'flex' : 'none'; }
     function resetSelectionTimeout() { clearTimeout(selectionTimeout); selectionTimeout = setTimeout(() => { if (modalOverlay.style.display === 'flex' && nodeInput.selectionStart !== nodeInput.selectionEnd) { nodeInput.setSelectionRange(nodeInput.selectionEnd, nodeInput.selectionEnd); } }, 5000); }
     function applyFormat(tag) { const s = nodeInput.selectionStart, e = nodeInput.selectionEnd, v = nodeInput.value; const replacement = tag + v.substring(s, e) + tag; nodeInput.focus(); nodeInput.setSelectionRange(s, e); if (!document.execCommand('insertText', false, replacement)) { nodeInput.value = v.substring(0, s) + replacement + v.substring(e); } nodeInput.setSelectionRange(s, s + replacement.length); resetSelectionTimeout(); }
@@ -1020,6 +1685,8 @@
 
     window.onclick = (e) => {
         if (isUploadingPages) return; 
+        if (!e.target.closest('#block-context-menu')) hideBlockContextMenu();
+        if (!e.target.closest('#edge-context-menu')) hideEdgeContextMenu();
         if (!e.target.matches('.disk-btn')) document.getElementById('disk-dropdown').style.display = 'none';
         if (!e.target.closest('#bg-settings-container')) document.getElementById('bg-panel').style.display = 'none';
         if (!e.target.closest('#marker-menu')) { document.getElementById('marker-palette').style.display = 'none'; activeMarkerValue = null; updateMarkerGrid(); requestRender(); }
@@ -1027,6 +1694,336 @@
         if (!e.target.closest('#image-menu')) { const imgDrop = document.getElementById('image-dropdown'); if (imgDrop) imgDrop.style.display = 'none'; }
         if (!e.target.closest('#page-menu-container') && !e.target.closest('.action-del')) { const pp = document.getElementById('page-popup'); if (pp) pp.style.display = 'none'; }
     };
+
+    function hexToRgba(hex, alpha) {
+        if (!hex || typeof hex !== 'string') return `rgba(255, 255, 255, ${alpha})`;
+        let c = hex.replace('#', '').trim();
+        if (c.length === 3) c = c.split('').map(ch => ch + ch).join('');
+        if (c.length !== 6) return `rgba(255, 255, 255, ${alpha})`;
+        const num = parseInt(c, 16);
+        if (isNaN(num)) return `rgba(255, 255, 255, ${alpha})`;
+        return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+    }
+
+    function showBlockContextMenu(clientX, clientY) {
+        if (typeof isReadOnlyMode !== 'undefined' && isReadOnlyMode) return;
+        const menu = document.getElementById('block-context-menu');
+        if (!menu) return;
+
+        menu.style.display = 'flex';
+        updateBlockContextMenuUI();
+
+        const menuW = menu.offsetWidth || 338;
+        const menuH = menu.offsetHeight || 215;
+
+        let left = clientX + 10;
+        let top = clientY + 10;
+
+        if (left + menuW > window.innerWidth - 12) {
+            left = clientX - menuW - 10;
+        }
+        if (top + menuH > window.innerHeight - 12) {
+            top = clientY - menuH - 10;
+        }
+        if (left < 10) left = 10;
+        if (top < 10) top = 10;
+
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+    }
+
+    function hideBlockContextMenu() {
+        const menu = document.getElementById('block-context-menu');
+        if (menu) menu.style.display = 'none';
+    }
+
+    function updateBlockContextMenuUI() {
+        if (selectedNodes.length === 0) return;
+        const n = selectedNodes[0];
+        const menu = document.getElementById('block-context-menu');
+        if (!menu) return;
+
+        // 1. 글자 크기
+        const curFs = n.fontSize || 14;
+        const fsEl = document.getElementById('bfm-fontsize-val');
+        if (fsEl) fsEl.innerText = curFs + 'px';
+
+        // 2. 모서리 라운드 (기본 12px) 및 슬라이더 동기화
+        const curRadius = (n.borderRadius !== undefined) ? n.borderRadius : 12;
+        menu.querySelectorAll('.bfm-pill[data-radius]').forEach(pill => {
+            const r = parseInt(pill.dataset.radius, 10);
+            if (r === curRadius) pill.classList.add('active');
+            else pill.classList.remove('active');
+        });
+        const slider = document.getElementById('bfm-radius-slider');
+        if (slider) slider.value = Math.min(40, curRadius);
+        const rVal = document.getElementById('bfm-radius-val');
+        if (rVal) rVal.innerText = curRadius + 'px';
+
+        // 3. 배경 투명도 (기본 10% / 0.1)
+        const curOpacity = (n.opacity !== undefined) ? n.opacity : ((n.type === "4") ? 0.0 : 0.1);
+        menu.querySelectorAll('.bfm-pill[data-opacity]').forEach(pill => {
+            const op = parseFloat(pill.dataset.opacity);
+            if (Math.abs(op - curOpacity) < 0.05) pill.classList.add('active');
+            else pill.classList.remove('active');
+        });
+
+        // 4. 블럭 테두리 색상
+        const curBorder = (n.blockColor || (n.colorIndex !== undefined && COLORS[n.colorIndex] ? COLORS[n.colorIndex] : '#5d5b4a')).toLowerCase();
+        let borderMatched = false;
+        menu.querySelectorAll('.bfm-color-swatch[data-border-color]').forEach(sw => {
+            if (sw.dataset.borderColor && sw.dataset.borderColor.toLowerCase() === curBorder) {
+                sw.classList.add('active');
+                borderMatched = true;
+            } else {
+                sw.classList.remove('active');
+            }
+        });
+        const borderInput = document.getElementById('bfm-border-color-input');
+        if (borderInput) {
+            borderInput.value = n.blockColor || '#5d5b4a';
+            const wrap = borderInput.closest('.bfm-custom-picker');
+            if (wrap) {
+                if (!borderMatched) wrap.classList.add('active');
+                else wrap.classList.remove('active');
+            }
+        }
+
+        // 4-1. 테두리 투명도 (기본 30% / 0.3)
+        const curBorderOp = (n.borderOpacity !== undefined) ? n.borderOpacity : 0.3;
+        menu.querySelectorAll('.bfm-pill[data-border-opacity]').forEach(pill => {
+            const op = parseFloat(pill.dataset.borderOpacity);
+            if (Math.abs(op - curBorderOp) < 0.05) pill.classList.add('active');
+            else pill.classList.remove('active');
+        });
+
+        // 5. 블럭 배경 색상
+        const curBg = (n.bgColor || '#ffffff').toLowerCase();
+        let bgMatched = false;
+        menu.querySelectorAll('.bfm-color-swatch[data-bg-color]').forEach(sw => {
+            if (sw.dataset.bgColor && sw.dataset.bgColor.toLowerCase() === curBg) {
+                sw.classList.add('active');
+                bgMatched = true;
+            } else {
+                sw.classList.remove('active');
+            }
+        });
+        const bgInput = document.getElementById('bfm-bg-color-input');
+        if (bgInput) {
+            bgInput.value = n.bgColor || '#ffffff';
+            const wrap = bgInput.closest('.bfm-custom-picker');
+            if (wrap) {
+                if (!bgMatched) wrap.classList.add('active');
+                else wrap.classList.remove('active');
+            }
+        }
+    }
+
+    function changeBlockFontSize(delta) {
+        if (selectedNodes.length === 0) return;
+        saveHistory();
+        selectedNodes.forEach(n => {
+            if (["marker", "image"].includes(n.type)) return;
+            const cur = n.fontSize || 14;
+            n.fontSize = Math.max(8, Math.min(72, cur + delta));
+            delete n._layoutCache;
+        });
+        updateBlockContextMenuUI();
+        requestRender();
+    }
+
+    function setBlockFontSize(size) {
+        if (selectedNodes.length === 0) return;
+        saveHistory();
+        selectedNodes.forEach(n => {
+            if (["marker", "image"].includes(n.type)) return;
+            n.fontSize = size;
+            delete n._layoutCache;
+        });
+        updateBlockContextMenuUI();
+        requestRender();
+    }
+
+    function setBlockRadius(val) {
+        if (selectedNodes.length === 0) return;
+        saveHistory();
+        selectedNodes.forEach(n => {
+            n.borderRadius = val;
+        });
+        updateBlockContextMenuUI();
+        requestRender();
+    }
+
+    function onRadiusSliderInput(val) {
+        if (selectedNodes.length === 0) return;
+        const r = parseInt(val, 10);
+        selectedNodes.forEach(n => {
+            n.borderRadius = r;
+        });
+        updateBlockContextMenuUI();
+        requestRender();
+    }
+
+    function setBlockOpacity(val) {
+        if (selectedNodes.length === 0) return;
+        saveHistory();
+        selectedNodes.forEach(n => {
+            n.opacity = val;
+        });
+        updateBlockContextMenuUI();
+        requestRender();
+    }
+
+    function setBlockBorderOpacity(val) {
+        if (selectedNodes.length === 0) return;
+        saveHistory();
+        selectedNodes.forEach(n => {
+            n.borderOpacity = val;
+        });
+        updateBlockContextMenuUI();
+        requestRender();
+    }
+
+    function setBlockBorderColor(colHex, shouldSave = true) {
+        if (selectedNodes.length === 0) return;
+        if (shouldSave) saveHistory();
+        selectedNodes.forEach(n => {
+            n.blockColor = colHex;
+            const cIdx = COLORS.indexOf(colHex);
+            if (cIdx !== -1) n.colorIndex = cIdx;
+        });
+        updateBlockContextMenuUI();
+        requestRender();
+    }
+    const setBlockColor = setBlockBorderColor; // 호환성 유지
+
+    function setBlockBgColor(colHex, shouldSave = true) {
+        if (selectedNodes.length === 0) return;
+        if (shouldSave) saveHistory();
+        selectedNodes.forEach(n => {
+            n.bgColor = colHex;
+        });
+        updateBlockContextMenuUI();
+        requestRender();
+    }
+
+    function showEdgeContextMenu(clientX, clientY) {
+        if (typeof isReadOnlyMode !== 'undefined' && isReadOnlyMode) return;
+        const menu = document.getElementById('edge-context-menu');
+        if (!menu) return;
+
+        menu.style.display = 'flex';
+        updateEdgeContextMenuUI();
+
+        const menuW = menu.offsetWidth || 338;
+        const menuH = menu.offsetHeight || 190;
+
+        let left = clientX + 10;
+        let top = clientY + 10;
+
+        if (left + menuW > window.innerWidth - 12) {
+            left = clientX - menuW - 10;
+        }
+        if (top + menuH > window.innerHeight - 12) {
+            top = clientY - menuH - 10;
+        }
+        if (left < 10) left = 10;
+        if (top < 10) top = 10;
+
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+    }
+
+    function hideEdgeContextMenu() {
+        const menu = document.getElementById('edge-context-menu');
+        if (menu) menu.style.display = 'none';
+    }
+
+    function updateEdgeContextMenuUI() {
+        if (!selectedEdge) return;
+        const e = selectedEdge;
+        const menu = document.getElementById('edge-context-menu');
+        if (!menu) return;
+
+        // 1. 화살표 방향 (0: 단방향, 1: 역방향, 2: 양방향)
+        const curDir = (e.dirType !== undefined) ? e.dirType : 0;
+        menu.querySelectorAll('.bfm-pill[data-edge-dir]').forEach(pill => {
+            const d = parseInt(pill.dataset.edgeDir, 10);
+            if (d === curDir) pill.classList.add('active');
+            else pill.classList.remove('active');
+        });
+
+        // 2. 꺾임 방향 (-1: 위, 1: 아래)
+        const curCurve = (e.curveSide !== undefined) ? e.curveSide : 1;
+        menu.querySelectorAll('.bfm-pill[data-edge-curve]').forEach(pill => {
+            const c = parseInt(pill.dataset.edgeCurve, 10);
+            if (c === curCurve) pill.classList.add('active');
+            else pill.classList.remove('active');
+        });
+
+        // 3. 색상
+        const curColor = (e.color || (e.colorIndex !== undefined && COLORS[e.colorIndex] ? COLORS[e.colorIndex] : '#5d5b4a')).toLowerCase();
+        let colorMatched = false;
+        menu.querySelectorAll('.bfm-color-swatch[data-edge-color]').forEach(sw => {
+            if (sw.dataset.edgeColor && sw.dataset.edgeColor.toLowerCase() === curColor) {
+                sw.classList.add('active');
+                colorMatched = true;
+            } else {
+                sw.classList.remove('active');
+            }
+        });
+        const colorInput = document.getElementById('efm-color-input');
+        if (colorInput) {
+            colorInput.value = e.color || (e.colorIndex !== undefined && COLORS[e.colorIndex] ? COLORS[e.colorIndex] : '#5d5b4a');
+            const wrap = colorInput.closest('.bfm-custom-picker');
+            if (wrap) {
+                if (!colorMatched) wrap.classList.add('active');
+                else wrap.classList.remove('active');
+            }
+        }
+
+        // 4. 투명도 (기본 30% / 0.3)
+        const curOpacity = (e.opacity !== undefined) ? e.opacity : 0.3;
+        menu.querySelectorAll('.bfm-pill[data-edge-opacity]').forEach(pill => {
+            const op = parseFloat(pill.dataset.edgeOpacity);
+            if (Math.abs(op - curOpacity) < 0.05) pill.classList.add('active');
+            else pill.classList.remove('active');
+        });
+    }
+
+    function setEdgeDir(dir) {
+        if (!selectedEdge) return;
+        saveHistory();
+        selectedEdge.dirType = dir;
+        updateEdgeContextMenuUI();
+        requestRender();
+    }
+
+    function setEdgeCurveSide(side) {
+        if (!selectedEdge) return;
+        saveHistory();
+        selectedEdge.curveSide = side;
+        updateEdgeContextMenuUI();
+        requestRender();
+    }
+
+    function setEdgeColor(colHex, shouldSave = true) {
+        if (!selectedEdge) return;
+        if (shouldSave) saveHistory();
+        selectedEdge.color = colHex;
+        const cIdx = COLORS.indexOf(colHex);
+        if (cIdx !== -1) selectedEdge.colorIndex = cIdx;
+        updateEdgeContextMenuUI();
+        requestRender();
+    }
+
+    function setEdgeOpacity(val) {
+        if (!selectedEdge) return;
+        saveHistory();
+        selectedEdge.opacity = val;
+        updateEdgeContextMenuUI();
+        requestRender();
+    }
 
     function openNodeModal(pos, node = null) {
         if (node) { editingNode = node; document.getElementById('modal-title').innerText = "아이디어 수정"; nodeInput.value = node.text; nodeTypeSelect.value = node.type; currentTextAlign = node.textAlign || "center"; }
@@ -1037,16 +2034,39 @@
 
     function closeModal(save) {
         if (save && nodeInput.value.trim()) {
-            saveHistory(); const ty = nodeTypeSelect.value; let fs = 14, op = 1.0;
-            if(ty === "1") fs = 21; else if(ty === "2") { fs = 17; op = 0.8; } else if(ty === "3") { fs = 14; op = 0.7; } else if(ty === "4") { fs = 14; op = 0.0; } 
+            saveHistory(); const ty = nodeTypeSelect.value; let fs = 14, op = 0.1;
+            if(ty === "1") fs = 21; else if(ty === "2") { fs = 17; op = 0.1; } else if(ty === "3") { fs = 14; op = 0.1; } else if(ty === "4") { fs = 14; op = 0.0; } 
             if (editingNode) { 
                 delete editingNode._layoutCache;
                 editingNode.text = nodeInput.value; 
                 editingNode.textAlign = currentTextAlign; 
-                if (editingNode.type !== ty) { editingNode.fontSize = fs; editingNode.opacity = op; editingNode.width = (ty === "2") ? 280 : (ty === "3" || ty === "4" ? 420 : 140); } 
+                if (editingNode.type !== ty) { 
+                    editingNode.fontSize = fs; 
+                    if (editingNode.opacity === undefined || ty === "4") editingNode.opacity = op; 
+                    editingNode.width = (ty === "2") ? 280 : (ty === "3" || ty === "4" ? 420 : 140); 
+                } 
                 editingNode.type = ty; 
             } 
-            else { let bw = (ty === "2") ? 280 : (ty === "3" || ty === "4" ? 420 : 140); nodes.push({ id: generateId(), x: pendingPos.x, y: pendingPos.y, text: nodeInput.value, type: ty, width: bw, height: 60, fontSize: fs, colorIndex: 0, opacity: op, textAlign: currentTextAlign }); }
+            else { 
+                let bw = (ty === "2") ? 280 : (ty === "3" || ty === "4" ? 420 : 140); 
+                nodes.push({ 
+                    id: generateId(), 
+                    x: pendingPos.x, 
+                    y: pendingPos.y, 
+                    text: nodeInput.value, 
+                    type: ty, 
+                    width: bw, 
+                    height: 60, 
+                    fontSize: fs, 
+                    colorIndex: 0, 
+                    blockColor: "#5d5b4a",
+                    borderOpacity: 0.3,
+                    bgColor: "#ffffff",
+                    borderRadius: 12,
+                    opacity: op, 
+                    textAlign: currentTextAlign 
+                }); 
+            }
         }
         editingNode = null; setTimeout(() => { modalOverlay.style.display = 'none'; requestRender(); }, 100);
         requestRender();
@@ -1299,6 +2319,16 @@
             return;
         }
         if (document.getElementById('recent-file-modal').style.display === 'flex') { if (e.key === 'Escape') { closeOpenModal(); } return; }
+        const bcm = document.getElementById('block-context-menu');
+        const ecm = document.getElementById('edge-context-menu');
+        if ((bcm && bcm.style.display !== 'none') || (ecm && ecm.style.display !== 'none')) {
+            if (e.key === 'Escape') {
+                hideBlockContextMenu();
+                hideEdgeContextMenu();
+                e.preventDefault();
+                return;
+            }
+        }
 
         if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); openNodeModal(currentWorldMouse); return; }
         if (e.key === 'Enter' && !e.shiftKey && selectedNodes.length === 1 && !["area", "marker", "image"].includes(selectedNodes[0].type)) { e.preventDefault(); openNodeModal(null, selectedNodes[0]); return; }
@@ -1312,23 +2342,39 @@
             saveHistory();
             if (selectedNodes.length > 0) { edges = edges.filter(ed => !selectedNodes.includes(ed.from) && !selectedNodes.includes(ed.to)); nodes = nodes.filter(n => !selectedNodes.includes(n)); selectedNodes = []; } 
             else if (selectedEdge) { edges = edges.filter(ed => ed !== selectedEdge); selectedEdge = null; }
+            hideBlockContextMenu();
+            hideEdgeContextMenu();
             requestRender();
         }
         
         if (selectedNodes.length === 1) {
             const n = selectedNodes[0];
             if (['ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowLeft'].includes(e.key)) { saveHistory(); e.preventDefault(); }
-            if (e.key === 'ArrowRight') n.colorIndex = ((n.colorIndex || 0) + 1) % 4;
-            else if (e.key === 'ArrowLeft') n.colorIndex = ((n.colorIndex || 0) + 3) % 4;
-            else if (e.key === 'ArrowUp') n.opacity = Math.min(1.0, (n.opacity || 1.0) + 0.1);
-            else if (e.key === 'ArrowDown') n.opacity = Math.max(0.1, (n.opacity || 1.0) - 0.1);
+            if (e.key === 'ArrowRight') {
+                n.colorIndex = ((n.colorIndex || 0) + 1) % 4;
+                n.blockColor = COLORS[n.colorIndex];
+            } else if (e.key === 'ArrowLeft') {
+                n.colorIndex = ((n.colorIndex || 0) + 3) % 4;
+                n.blockColor = COLORS[n.colorIndex];
+            } else if (e.key === 'ArrowUp') {
+                n.opacity = Math.min(1.0, (n.opacity !== undefined ? n.opacity : 0.1) + 0.1);
+            } else if (e.key === 'ArrowDown') {
+                n.opacity = Math.max(0.0, (n.opacity !== undefined ? n.opacity : 0.1) - 0.1);
+            }
+            updateBlockContextMenuUI();
             requestRender();
         } else if (selectedEdge) {
             if (['ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowLeft'].includes(e.key)) saveHistory();
             if (e.ctrlKey && e.key === 'ArrowUp') { e.preventDefault(); selectedEdge.curveSide = -1; }
             else if (e.ctrlKey && e.key === 'ArrowDown') { e.preventDefault(); selectedEdge.curveSide = 1; }
             else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); selectedEdge.dirType = ((selectedEdge.dirType || 0) + (e.key === 'ArrowUp' ? 1 : 2)) % 3; }
-            else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { isChangingColor = true; selectedEdge.colorIndex = ((selectedEdge.colorIndex || 0) + (e.key === 'ArrowRight' ? 1 : 3)) % 4; setTimeout(() => isChangingColor = false, 400); }
+            else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { 
+                isChangingColor = true; 
+                selectedEdge.colorIndex = ((selectedEdge.colorIndex || 0) + (e.key === 'ArrowRight' ? 1 : 3)) % 4; 
+                selectedEdge.color = COLORS[selectedEdge.colorIndex];
+                setTimeout(() => isChangingColor = false, 400); 
+            }
+            updateEdgeContextMenuUI();
             requestRender();
         }
     });
@@ -1375,11 +2421,52 @@
     });
     nodeInput.addEventListener('mousedown', () => clearTimeout(selectionTimeout));
 
-    canvas.addEventListener('dblclick', (e) => { const wp = toWorld(e.clientX, e.clientY); const hit = nodes.slice().reverse().find(n => !["area", "marker", "image"].includes(n.type) && wp.x > n.x-n.width/2 && wp.x < n.x+n.width/2 && wp.y > n.y-n.height/2 && wp.y < n.y+n.height/2); if (hit) openNodeModal(null, hit); else openNodeModal(wp); });
+    canvas.addEventListener('dblclick', (e) => { 
+        hideBlockContextMenu();
+        const wp = toWorld(e.clientX, e.clientY); 
+        const hit = nodes.slice().reverse().find(n => !["area", "marker", "image"].includes(n.type) && wp.x > n.x-n.width/2 && wp.x < n.x+n.width/2 && wp.y > n.y-n.height/2 && wp.y < n.y+n.height/2); 
+        if (hit) openNodeModal(null, hit); 
+        else openNodeModal(wp); 
+    });
 
     canvas.addEventListener('mousedown', (e) => {
         const wp = toWorld(e.clientX, e.clientY); lastMousePos = { x: e.clientX, y: e.clientY };
-        if (e.button === 2) { isPanning = true; requestRender(); return; }
+        if (typeof isReadOnlyMode !== 'undefined' && isReadOnlyMode) {
+            if (e.button === 2) { isPanning = true; requestRender(); return; }
+            return;
+        }
+        if (e.button === 2) {
+            const hitNormal = nodes.slice().reverse().find(n => !["area"].includes(n.type) && wp.x > n.x-n.width/2 && wp.x < n.x+n.width/2 && wp.y > n.y-n.height/2 && wp.y < n.y+n.height/2);
+            const hitArea = nodes.slice().reverse().find(n => n.type === "area" && wp.x > n.x-n.width/2-5 && wp.x < n.x+n.width/2+5 && wp.y > n.y-n.height/2-5 && wp.y < n.y+n.height/2+5);
+            const hit = hitNormal || hitArea;
+            if (hit) {
+                hideEdgeContextMenu();
+                if (!selectedNodes.includes(hit)) {
+                    selectedNodes = [hit];
+                }
+                selectedEdge = null;
+                showBlockContextMenu(e.clientX, e.clientY);
+                requestRender();
+                return;
+            }
+            const eIdx = edges.findIndex(ed => distToSegment(wp, getBestPoints(ed.from, ed.to, ed.manualStart, ed.manualEnd).f, getBestPoints(ed.from, ed.to, ed.manualStart, ed.manualEnd).t) < 40 / currentScale);
+            if (eIdx !== -1) {
+                hideBlockContextMenu();
+                selectedNodes = [];
+                selectedEdge = edges[eIdx];
+                showEdgeContextMenu(e.clientX, e.clientY);
+                requestRender();
+                return;
+            } else {
+                hideBlockContextMenu();
+                hideEdgeContextMenu();
+                isPanning = true; 
+                requestRender(); 
+                return;
+            }
+        }
+        hideBlockContextMenu();
+        hideEdgeContextMenu();
         if(activeImageData !== null && activeImageDimensions !== null) { saveHistory(); nodes.push({ id: generateId(), x: wp.x, y: wp.y, type: "image", data: activeImageData, width: activeImageDimensions.w, height: activeImageDimensions.h, colorIndex: 0, opacity: 1.0 }); activeImageData = null; activeImageDimensions = null; requestRender(); return; }
         if(activeMarkerValue !== null) { saveHistory(); nodes.push({ id: generateId(), x: wp.x, y: wp.y, type: "marker", value: activeMarkerValue, width: 30, height: 30, colorIndex: 0, opacity: 1.0 }); activeMarkerValue = null; updateMarkerGrid(); requestRender(); return; }
         const hitNormal = nodes.slice().reverse().find(n => !["area"].includes(n.type) && wp.x > n.x-n.width/2 && wp.x < n.x+n.width/2 && wp.y > n.y-n.height/2 && wp.y < n.y+n.height/2);
@@ -1445,15 +2532,18 @@
     window.addEventListener('mouseup', () => {
         if (isSelecting) { const x1 = Math.min(selectionRect.x1, selectionRect.x2), x2 = Math.max(selectionRect.x1, selectionRect.x2), y1 = Math.min(selectionRect.y1, selectionRect.y2), y2 = Math.max(selectionRect.y1, selectionRect.y2); selectedNodes = nodes.filter(n => n.x > x1 && n.x < x2 && n.y > y1 && n.y < y2); }
         if (isCreatingArea) { const w = Math.abs(selectionRect.x2 - selectionRect.x1), h = Math.abs(selectionRect.y2 - selectionRect.y1); if (w > 15 && h > 15) { saveHistory(); nodes.push({ id: generateId(), x: (selectionRect.x1 + selectionRect.x2)/2, y: (selectionRect.y1 + selectionRect.y2)/2, text: "", type: "area", width: w, height: h, fontSize: 14, colorIndex: 3, opacity: 0.7 }); } }
-        if (connectingNode) { const hit = nodes.slice().reverse().find(n => n !== connectingNode && currentWorldMouse.x > n.x-n.width/2 && currentWorldMouse.x < n.x+n.width/2 && currentWorldMouse.y > n.y-n.height/2 && currentWorldMouse.y < n.y+n.height/2); if (hit) { saveHistory(); edges.push({ from: connectingNode, to: hit, colorIndex: 0, dirType: 0, curveSide: Math.random() > 0.5 ? 1 : -1 }); } }
+        if (connectingNode) { const hit = nodes.slice().reverse().find(n => n !== connectingNode && currentWorldMouse.x > n.x-n.width/2 && currentWorldMouse.x < n.x+n.width/2 && currentWorldMouse.y > n.y-n.height/2 && currentWorldMouse.y < n.y+n.height/2); if (hit) { saveHistory(); edges.push({ from: connectingNode, to: hit, colorIndex: 0, color: '#5d5b4a', dirType: 0, curveSide: Math.random() > 0.5 ? 1 : -1, opacity: 0.3 }); } }
         isPanning = isSelecting = isCreatingArea = false; draggingNodes = []; resizingNode = null; connectingNode = null; draggingEdgeHandle = false;
         requestRender();
     });
 
     canvas.addEventListener('wheel', (e) => {
-        e.preventDefault(); const wp = toWorld(e.clientX, e.clientY); let handled = false;
-        if (selectedNodes.length === 1 && !["area", "marker", "image"].includes(selectedNodes[0].type)) { const n = selectedNodes[0]; if (wp.x > n.x - n.width/2 && wp.x < n.x + n.width/2 && wp.y > n.y - n.height/2 && wp.y < n.y + n.height/2) { saveHistory(); n.fontSize = Math.max(8, n.fontSize + (e.deltaY > 0 ? -1 : 1)); handled = true; } }
-        if (!handled) { targetScale = Math.min(Math.max(0.05, targetScale - e.deltaY * 0.0006), 5.0); targetOffset.x = e.clientX - wp.x * targetScale; targetOffset.y = e.clientY - wp.y * targetScale; }
+        hideBlockContextMenu();
+        hideEdgeContextMenu();
+        e.preventDefault(); const wp = toWorld(e.clientX, e.clientY);
+        targetScale = Math.min(Math.max(0.05, targetScale - e.deltaY * 0.0006), 5.0); 
+        targetOffset.x = e.clientX - wp.x * targetScale; 
+        targetOffset.y = e.clientY - wp.y * targetScale;
         requestRender();
     }, { passive: false });
 
@@ -1534,7 +2624,7 @@
     function getHandleAt(n, wx, wy) { const s = (HANDLE_SIZE + 5) / currentScale, l = n.x - n.width/2, r = n.x + n.width/2, t = n.y - n.height/2, b = n.y + n.height/2; if (Math.hypot(wx - l, wy - t) < s) return 'tl'; if (Math.hypot(wx - r, wy - t) < s) return 'tr'; if (Math.hypot(wx - l, wy - b) < s) return 'bl'; if (Math.hypot(wx - r, wy - b) < s) return 'br'; return null; }
     function getNearestSide(n, wp) { const d = [Math.abs(wp.y-(n.y-n.height/2)), Math.abs(wp.y-(n.y+n.height/2)), Math.abs(wp.x-(n.x-n.width/2)), Math.abs(wp.x-(n.x+n.width/2))]; const m = Math.min(...d); return m===d[0]?'top':m===d[1]?'bottom':m===d[2]?'left':'right'; }
 
-    function drawCurvedArrow(ctx, f, t, color, isGhost = false, isSelected = false, ms, me, dir = 0, curveSide = 1) {
+    function drawCurvedArrow(ctx, f, t, color, isGhost = false, isSelected = false, ms, me, dir = 0, curveSide = 1, opacity = 0.3) {
         if (!f || !t || f.x === undefined || t.x === undefined || isNaN(f.x) || isNaN(t.x)) return; 
         
         const ps = getBestPoints(f, t, ms, me); 
@@ -1546,8 +2636,11 @@
               cpX = midX + nx * offset, cpY = midY + ny * offset; 
 
         ctx.save(); 
-        ctx.globalAlpha = isSelected ? 1.0 : 0.75; 
-        const arrowColor = (isSelected && !isChangingColor) ? "#2196f3" : color;
+        const edgeAlpha = (opacity !== undefined) ? opacity : 0.3;
+        const edgeMenu = document.getElementById('edge-context-menu');
+        const isMenuOpen = edgeMenu && edgeMenu.style.display === 'flex';
+        ctx.globalAlpha = isGhost ? 0.6 : (isSelected ? (isMenuOpen ? edgeAlpha : Math.max(edgeAlpha, 0.55)) : edgeAlpha); 
+        const arrowColor = (isSelected && !isChangingColor && !isMenuOpen) ? "#2196f3" : color;
         ctx.strokeStyle = arrowColor;
         ctx.fillStyle = arrowColor;
 
@@ -1663,35 +2756,44 @@
         else if (n.type === "image") {
             let img = imageCache.get(n.data); 
             if (!img) { img = new Image(); img.onload = () => requestRender(); img.src = n.data; imageCache.set(n.data, img); }
-            ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 8); ctx.fillStyle = "white"; ctx.fill();
-            ctx.save(); ctx.shadowColor = "transparent"; ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 8); ctx.clip(); 
+            const br = (n.borderRadius !== undefined) ? (n.borderRadius === 999 ? Math.min(n.width, n.height)/2 : n.borderRadius) : 12;
+            ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, br); ctx.fillStyle = "white"; ctx.fill();
+            ctx.save(); ctx.shadowColor = "transparent"; ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, br); ctx.clip(); 
             if (img.complete) ctx.drawImage(img, n.x-n.width/2, n.y-n.height/2, n.width, n.height); 
             ctx.restore();
             ctx.shadowColor = "transparent"; ctx.strokeStyle = sel ? "#2196f3" : "#cccccc"; ctx.lineWidth = 3; ctx.strokeRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height);
         }
         else if (n.type === "area") { 
-            ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); ctx.fillStyle = `rgba(255, 255, 255, 0.05)`; ctx.fill(); 
-            ctx.shadowColor = "transparent"; ctx.setLineDash([2, 3]); ctx.strokeStyle = COLORS[n.colorIndex || 0]; ctx.globalAlpha = sel ? 1.0 : 0.7; ctx.lineWidth = (sel ? 4 : 2) / currentScale; ctx.stroke(); 
+            const br = (n.borderRadius !== undefined) ? (n.borderRadius === 999 ? Math.min(n.width, n.height)/2 : n.borderRadius) : 12;
+            const blockColor = n.blockColor || COLORS[n.colorIndex || 0] || '#388e3c';
+            const bgHex = n.bgColor || '#ffffff';
+            const borderAl = (n.borderOpacity !== undefined) ? n.borderOpacity : 0.3;
+            ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, br); ctx.fillStyle = hexToRgba(bgHex, 0.05); ctx.fill(); 
+            ctx.shadowColor = "transparent"; ctx.setLineDash([2, 3]); ctx.strokeStyle = sel ? "#2196f3" : hexToRgba(blockColor, borderAl); ctx.globalAlpha = sel ? 1.0 : borderAl; ctx.lineWidth = (sel ? 4 : 2) / currentScale; ctx.stroke(); 
         } 
         else { 
             const layout = getNodeLayout(ctx, n);
-            let al = n.opacity !== undefined ? n.opacity : 1.0; 
+            let al = (n.opacity !== undefined) ? n.opacity : ((n.type === "4") ? 0.0 : 0.1); 
             if (selectedNodes.length > 1 && sel) al *= 0.5;
+            const br = (n.borderRadius !== undefined) ? (n.borderRadius === 999 ? Math.min(n.width, n.height)/2 : n.borderRadius) : 12;
+            const blockColor = n.blockColor || (n.colorIndex !== undefined && COLORS[n.colorIndex] ? COLORS[n.colorIndex] : "#5d5b4a");
+            const borderAl = (n.borderOpacity !== undefined) ? n.borderOpacity : 0.3;
+            const bgHex = n.bgColor || '#ffffff';
             
             if (n.type !== "4") { 
-                ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); 
-                ctx.fillStyle = `rgba(255, 255, 255, ${al})`; ctx.fill(); 
-                ctx.shadowColor = "transparent"; ctx.strokeStyle = sel ? "#2196f3" : "#5d5b4a"; ctx.lineWidth = (sel ? 2.5 : 1.5) / currentScale; 
-                if (n.type === "1") ctx.stroke(); 
+                ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, br); 
+                ctx.fillStyle = hexToRgba(bgHex, al); ctx.fill(); 
+                ctx.shadowColor = "transparent"; ctx.strokeStyle = sel ? "#2196f3" : hexToRgba(blockColor, borderAl); ctx.lineWidth = (sel ? 2.5 : 1.5) / currentScale; 
+                if (n.type === "1" || n.type === "3") ctx.stroke(); 
                 else if (n.type === "2") { ctx.beginPath(); ctx.moveTo(n.x-n.width/2, n.y+n.height/2); ctx.lineTo(n.x+n.width/2, n.y+n.height/2); ctx.stroke(); } 
             } else if (sel) { 
-                ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, 5); 
+                ctx.beginPath(); ctx.roundRect(n.x-n.width/2, n.y-n.height/2, n.width, n.height, br); 
                 ctx.shadowColor = "transparent"; ctx.strokeStyle = "rgba(33, 150, 243, 0.5)"; ctx.lineWidth = 1.5 / currentScale; ctx.setLineDash([5, 5]); ctx.stroke(); ctx.setLineDash([]); 
             }
             
             ctx.shadowColor = "transparent";
             ctx.globalAlpha = 1.0; 
-            const defaultColor = COLORS[n.colorIndex || 0]; 
+            const defaultTextColor = "#2c2b25"; 
             ctx.textBaseline = "middle"; 
             
             if (layout) {
@@ -1704,13 +2806,13 @@
                     lineInfo.chunks.forEach(ck => {
                         let fontStyle = (ck.bold ? "bold " : "") + (ck.italic ? "italic " : ""); 
                         ctx.font = `${fontStyle}${n.fontSize}px 'Malgun Gothic'`; 
-                        ctx.fillStyle = ck.color || defaultColor; 
+                        ctx.fillStyle = ck.color || defaultTextColor; 
                         ctx.fillText(ck.text, curX, startY + (i * layout.lh));
                         if (ck.underline) { 
                             ctx.beginPath(); 
                             ctx.moveTo(curX, startY + (i * layout.lh) + (n.fontSize * 0.45)); 
                             ctx.lineTo(curX + ck.width, startY + (i * layout.lh) + (n.fontSize * 0.45)); 
-                            ctx.strokeStyle = ck.color || defaultColor; 
+                            ctx.strokeStyle = ck.color || defaultTextColor; 
                             ctx.lineWidth = 1.5; 
                             ctx.stroke(); 
                         } 
@@ -1777,7 +2879,9 @@
             if (e && e.from && e.to && !isNaN(e.from.x) && !isNaN(e.to.x)) { 
                 if (isEdgeInView(e, vX1, vY1, vX2, vY2)) {
                     const isEdgeSel = (e === selectedEdge || (selectedNodes.includes(e.from) && selectedNodes.includes(e.to))); 
-                    drawCurvedArrow(ctx, e.from, e.to, COLORS[e.colorIndex||0], false, isEdgeSel, e.manualStart, e.manualEnd, e.dirType, e.curveSide); 
+                    const edgeColor = e.color || (e.colorIndex !== undefined && COLORS[e.colorIndex] ? COLORS[e.colorIndex] : '#5d5b4a');
+                    const edgeOpacity = (e.opacity !== undefined) ? e.opacity : 0.3;
+                    drawCurvedArrow(ctx, e.from, e.to, edgeColor, false, isEdgeSel, e.manualStart, e.manualEnd, e.dirType, e.curveSide, edgeOpacity); 
                 }
             } 
         });
