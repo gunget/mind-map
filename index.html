@@ -47,7 +47,7 @@
         .floating-ui { position: absolute; z-index: 150; user-select: none; }
         
         /* 플로팅 메뉴 공통 버튼 스타일: 저장 버튼(.disk-btn)과 동일한 투명도와 크기, 호버 효과 적용 */
-        .disk-btn, #help-icon, #image-icon, #marker-icon, #brush-icon, #page-icon { 
+        .disk-btn, #pt-icon, #help-icon, #image-icon, #marker-icon, #brush-icon, #page-icon { 
             font-size: 24px; 
             cursor: pointer; 
             background: rgba(255, 255, 255, 0.3); 
@@ -66,31 +66,125 @@
             color: inherit;
         }
         .disk-btn { font-size: 28px; }
+        #pt-icon { font-size: 24px; filter: none; }
+        #pt-icon.active {
+            background: #2196f3 !important;
+            filter: none !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(33, 150, 243, 0.6);
+        }
         #help-icon { font-size: 22px; font-weight: bold; color: #5d5b4a; }
-        .disk-btn:hover, #help-icon:hover, #image-icon:hover, #marker-icon:hover, #brush-icon:hover, #page-icon:hover { 
+        .disk-btn:hover, #pt-icon:hover, #help-icon:hover, #image-icon:hover, #marker-icon:hover, #brush-icon:hover, #page-icon:hover { 
             transform: scale(1.1); 
             background: rgba(255, 255, 255, 0.5); 
         }
 
-        #help-container { top: 15px; left: 15px; z-index: 500; }
+        #pt-container, #help-container { top: 15px; left: 15px; z-index: 500; }
         
-        #toolbar { 
-            display: none; 
-            position: absolute;
-            z-index: 3000;
-            width: 360px; 
-            background: rgba(255, 255, 255, 0.98); 
-            padding: 20px; 
-            border-radius: 12px; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.25); 
-            border: 1px solid #e0dcc5; 
-            margin-top: 10px; 
-            max-height: 85vh; 
-            overflow-y: auto; 
+        /* 프레젠테이션 모드 상단 HUD 제어바 */
+        #pt-hud {
+            display: none;
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9500;
+            background: rgba(35, 34, 30, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            color: #ffffff;
+            border-radius: 30px;
+            padding: 7px 18px;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.18);
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            user-select: none;
+            animation: bfmFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        #toolbar::-webkit-scrollbar { width: 6px; }
-        #toolbar::-webkit-scrollbar-thumb { background: #e0dcc5; border-radius: 3px; }
-        #close-help { float: right; cursor: pointer; font-weight: bold; color: #888; }
+        .pt-badge {
+            background: #2196f3;
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 12px;
+            letter-spacing: 0.5px;
+        }
+        .pt-title {
+            max-width: 240px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 13px;
+            color: #f5f5f5;
+        }
+        .pt-branch-badge {
+            font-size: 11px;
+            color: #ffd54f;
+            background: rgba(255, 213, 79, 0.18);
+            padding: 3px 8px;
+            border-radius: 10px;
+        }
+        .pt-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #ffffff;
+            border-radius: 16px;
+            padding: 4px 12px;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .pt-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        .pt-btn.pt-exit {
+            background: rgba(244, 67, 54, 0.25);
+            border-color: rgba(244, 67, 54, 0.5);
+            color: #ff8a80;
+        }
+        .pt-btn.pt-exit:hover {
+            background: rgba(244, 67, 54, 0.5);
+            color: white;
+        }
+
+        /* 중앙 도움말 모달 스타일 */
+        #help-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            animation: bfmFadeIn 0.2s ease;
+        }
+        #help-modal-card {
+            position: relative;
+            width: 520px;
+            max-width: 92vw;
+            max-height: 85vh;
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+            border: 1px solid #e0dcc5;
+            padding: 26px 30px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        #help-modal-card::-webkit-scrollbar { width: 6px; }
+        #help-modal-card::-webkit-scrollbar-thumb { background: #ded9c6; border-radius: 3px; }
 
         #save-menu { top: 15px; right: 15px; z-index: 150; }
         .dropdown { display: none; position: absolute; top: 60px; right: 0; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); min-width: 170px; overflow: hidden; border: 1px solid #eee; }
@@ -684,71 +778,92 @@
             left: 0;
         }
         body.readonly-mode #block-context-menu, body.readonly-mode #edge-context-menu { display: none !important; }
-    </style></head><body oncontextmenu="return false;"><div id="help-container" class="floating-ui">
-    <div id="help-icon" onclick="toggleHelp()">?</div>
-    <div id="toolbar">
-        <span id="close-help" onclick="toggleHelp()">×</span>
-        <h4 style="margin:0 0 12px 0; color:#4a483e; font-size: 18px; border-bottom: 2px solid #e0dcc5; padding-bottom: 5px;">User Guide</h4>
-        <div style="font-size: 11px; color: #7e7b64; line-height: 1.6;">
-            <b>[입력창 편집]</b><br>
-- 창 활성화 : 마우스 왼쪽 더블클릭 또는 Shift+Enter
-<br>
-- 창 타입 선택 : 모달 내 
-<b>Ctrl + 키보드 상하(↑↓)</b><br>
-- 텍스트 서식 : 드래그 선택 후 
-<b>Ctrl+B, I, U</b><br>
-- 특정 색변경 : 드래그 선택 후 🎨 아이콘 또는 <b>Ctrl+Q 후 1~7</b> (7색 지원)
-<br>
-- 서식 취소 : 입력창 내에서 
-<b>Ctrl+Z</b><br>
-- 서식 선택해제 : 
-<b>Esc</b> (선택 없을 땐 창닫기)<br>
-- 창 적용 : Shift+Enter
-<br><br>
-            
-            <b>[블럭 기능]</b> (선택 후)<br>
-- 미니 서식창 : 블럭 위 <b>마우스 우클릭</b> (글자크기, 라운드, 테두리/배경색, 투명도)<br>
-- 글자크기 변경 : 미니 서식창의 <b>+ / − 버튼</b><br>
-- 특정 글자색 변경 : 글자 편집창(더블클릭) 내 드래그 후 🎨 또는 <b>Ctrl+Q 후 1~7</b><br>
-- 배경 투명도 변경 : 키보드 상하(↑↓)<br>
-- 블럭 크기 변경 : 구석 핸들 드래그 (단방향 고정)<br>
-- 블럭 위치 변경 : 드래그 (다중 선택 시 함께 이동)<br>
-- 특정 영역 빗금 표시 : Ctrl + 마우스 왼쪽 드래그<br>
-- 특정 영역 색 바꾸기 : 선택 후 우클릭 또는 키보드 좌우(←→)<br><br>
-            
-            <b>[화살표 기능]</b><br>
-- 생성 : 블럭/이미지/영역 위에서 <b>Shift+Drag</b><br>
-- 화살표 서식 : 화살표 위 <b>마우스 우클릭</b> (방향, 꺾임, 선 종류, 색상, 투명도)<br>
-- 화살표 선 종류 : 실선, 점선, 긴 파선, 두 줄선 (우클릭 서식창 또는 <b>Shift+좌우(←→)</b>)<br>
-- 위치 변경 : 선택 후 끝 부분 핸들 드래그<br>
-- 화살표 색 변경 : 선택 후 키보드 좌우(←→)<br>
-- 화살표 방향 변경 : 선택 후 키보드 상하(↑↓)<br>
-- 화살표 굴곡 방향 : 선택 후 <b>Ctrl + 키보드 상하(↑↓)</b><br><br>
-            
-            <b>[화면 조정 & 저장]</b><br>
-- 확대 축소 : 마우스 휠 / 화면 이동 : 우클릭 드래그
-<br>
-- 모든 블럭 한 화면에 담기 : Ctrl + E
-<br>
-- 다중 선택 : Ctrl + 좌클릭 (객체 추가/해제)
-<br>
-- 다른 탭으로 복사 : 선택 후 
-<b>Ctrl+C</b> / 다른 탭에서 <b>Ctrl+V</b><br>
-- 덮어쓰기 저장 : 우상단 💾 아이콘 또는 
-<b>Ctrl+Shift+S</b><br>
-- 파일 불러오기 : 메뉴 클릭 또는 
-<b>Ctrl+O</b>
-        </div>
-    </div></div><div id="save-menu" class="floating-ui">
-    <div class="disk-btn" id="main-disk-btn" onclick="toggleDropdown()">💾</div>
-    <div class="dropdown" id="disk-dropdown">
-        <div onclick="saveProject()">저장하기 (덮어쓰기)</div>
-        <div onclick="exportProject()">새파일로 저장</div>
-        <div onclick="startNewSheet()" style="color: #2196f3; font-weight: 800;">새로운 시트로 시작 (+보관)</div>
-        <div onclick="showOpenModal()">프로젝트 불러오기</div>
-        <div onclick="saveAsImage()">이미지로 내보내기 (JPEG)</div>
+    </style></head><body oncontextmenu="return false;">
+    <!-- 좌상단 프레젠테이션 모드 토글 버튼 -->
+    <div id="pt-container" class="floating-ui">
+        <div id="pt-icon" class="disk-btn" onclick="togglePresentationMode()" title="프레젠테이션 모드 시작 / 종료 (F5)">📽️</div>
     </div>
-    <input type="file" id="file-input" style="display:none" onchange="importProject(event)"></div><div id="image-menu" class="floating-ui">
+
+    <!-- 프레젠테이션 모드 상단 HUD 제어 바 -->
+    <div id="pt-hud">
+        <span class="pt-badge">📽️ PT</span>
+        <span id="pt-title" class="pt-title">발표 모드</span>
+        <span id="pt-branch-info" class="pt-branch-badge" style="display:none;">갈래 1/1</span>
+        <button type="button" class="pt-btn" onclick="ptNavPrev()" title="이전 블럭 (←)">◀ 이전</button>
+        <button type="button" class="pt-btn" onclick="ptNavNext()" title="다음 블럭 (→)">다음 ▶</button>
+        <button type="button" class="pt-btn pt-exit" onclick="exitPresentationMode()" title="종료 (Esc)">✕ 종료</button>
+    </div>
+
+    <!-- 중앙 도움말 팝업 모달 -->
+    <div id="help-modal-overlay" onclick="if(event.target===this) closeHelpModal()">
+        <div id="help-modal-card" onclick="event.stopPropagation()">
+            <button type="button" onclick="closeHelpModal()" style="position:absolute; top:16px; right:18px; background:none; border:none; font-size:24px; color:#888; cursor:pointer; line-height:1;" title="닫기 (Esc)">×</button>
+            <h3 style="margin:0 0 16px 0; color:#4a483e; font-size:18px; font-weight:800; border-bottom:2px solid #e0dcc5; padding-bottom:8px; display:flex; align-items:center; gap:8px;">
+                <span>💡</span> 아이디어 블럭 커넥터 사용 가이드
+            </h3>
+            <div style="font-size:11.5px; color:#5d5b4a; line-height:1.75;">
+                <b>[프레젠테이션 모드 (PT)]</b><br>
+                - 모드 시작/종료 : 좌상단 📽️ 아이콘 또는 <b>F5</b><br>
+                - 특정 블럭부터 시작 : 블럭 선택 후 📽️ 아이콘 클릭<br>
+                - 다음 블럭 이동 : <b>키보드 오른쪽(→)</b> 또는 Space / Enter<br>
+                - 이전 블럭 이동 : <b>키보드 왼쪽(←)</b> 또는 Backspace<br>
+                - 자식 블럭 갈래 변경 : 자식이 여러 개일 때 <b>키보드 상하(↑↓)</b><br>
+                - 자동 스마트 줌 : 카드/밑줄(화면 30%), 해시태그/투명텍스트(화면 70%) 자동 확대<br>
+                - 마지막 블럭 도달 시 : 화면 전체 줌아웃 후 처음 블럭으로 자동 복귀<br>
+                - 마우스 배율 조절 : 마우스 휠로 자유롭게 줌인/줌아웃 조절 가능<br>
+                - 모드 종료 : <b>Esc</b> 키 또는 상단 HUD의 ✕ 종료 버튼<br><br>
+
+                <b>[입력창 편집]</b><br>
+                - 창 활성화 : 마우스 왼쪽 더블클릭 또는 Shift+Enter<br>
+                - 창 타입 선택 : 모달 내 <b>Ctrl + 키보드 상하(↑↓)</b><br>
+                - 텍스트 서식 : 드래그 선택 후 <b>Ctrl+B, I, U</b><br>
+                - 특정 색변경 : 드래그 선택 후 🎨 아이콘 또는 <b>Ctrl+Q 후 1~7</b> (7색 지원)<br>
+                - 서식 취소 : 입력창 내에서 <b>Ctrl+Z</b><br>
+                - 서식 선택해제 : <b>Esc</b> (선택 없을 땐 창닫기)<br>
+                - 창 적용 : Shift+Enter<br><br>
+                
+                <b>[블럭 기능]</b> (선택 후)<br>
+                - 미니 서식창 : 블럭 위 <b>마우스 우클릭</b> (글자크기, 라운드, 테두리/배경색, 투명도)<br>
+                - 글자크기 변경 : 미니 서식창의 <b>+ / − 버튼</b><br>
+                - 특정 글자색 변경 : 글자 편집창(더블클릭) 내 드래그 후 🎨 또는 <b>Ctrl+Q 후 1~7</b><br>
+                - 배경 투명도 변경 : 키보드 상하(↑↓)<br>
+                - 블럭 크기 변경 : 구석 핸들 드래그 (단방향 고정)<br>
+                - 블럭 위치 변경 : 드래그 (다중 선택 시 함께 이동)<br>
+                - 특정 영역 빗금 표시 : Ctrl + 마우스 왼쪽 드래그<br>
+                - 특정 영역 색 바꾸기 : 선택 후 우클릭 또는 키보드 좌우(←→)<br><br>
+                
+                <b>[화살표 기능]</b><br>
+                - 생성 : 블럭/이미지/영역 위에서 <b>Shift+Drag</b><br>
+                - 화살표 서식 : 화살표 위 <b>마우스 우클릭</b> (방향, 꺾임, 선 종류, 색상, 투명도 슬라이더)<br>
+                - 화살표 선 종류 : 실선, 점선, 긴 파선, 두 줄선 (우클릭 서식창 또는 <b>Shift+좌우(←→)</b>)<br>
+                - 위치 변경 : 선택 후 끝 부분 핸들 드래그<br>
+                - 화살표 색 변경 : 선택 후 키보드 좌우(←→)<br>
+                - 화살표 방향 변경 : 선택 후 키보드 상하(↑↓)<br>
+                - 화살표 굴곡 방향 : 선택 후 <b>Ctrl + 키보드 상하(↑↓)</b><br><br>
+                
+                <b>[화면 조정 & 저장]</b><br>
+                - 확대 축소 : 마우스 휠 / 화면 이동 : 우클릭 드래그<br>
+                - 모든 블럭 한 화면에 담기 : Ctrl + E<br>
+                - 다중 선택 : Ctrl + 좌클릭 (객체 추가/해제)<br>
+                - 다른 탭으로 복사 : 선택 후 <b>Ctrl+C</b> / 다른 탭에서 <b>Ctrl+V</b><br>
+                - 덮어쓰기 저장 : 우상단 💾 아이콘 또는 <b>Ctrl+Shift+S</b><br>
+                - 파일 불러오기 : 메뉴 클릭 또는 <b>Ctrl+O</b>
+            </div>
+        </div>
+    </div>
+
+    <div id="save-menu" class="floating-ui">
+        <div class="disk-btn" id="main-disk-btn" onclick="toggleDropdown()">💾</div>
+        <div class="dropdown" id="disk-dropdown">
+            <div onclick="saveProject()">저장하기 (덮어쓰기)</div>
+            <div onclick="exportProject()">새파일로 저장</div>
+            <div onclick="startNewSheet()" style="color: #2196f3; font-weight: 800;">새로운 시트로 시작 (+보관)</div>
+            <div onclick="showOpenModal()">프로젝트 불러오기</div>
+            <div onclick="saveAsImage()">이미지로 내보내기 (JPEG)</div>
+            <div onclick="openHelpModal()" style="border-top: 1px solid #f0f0f0; color: #5d5b4a;">💡 도움말 (사용법)</div>
+        </div>
+        <input type="file" id="file-input" style="display:none" onchange="importProject(event)">
+    </div><div id="image-menu" class="floating-ui">
     <div id="image-icon" onclick="toggleImageDropdown()">🖼️</div>
     <div class="dropdown" id="image-dropdown" style="top: 0; left: 60px; right: auto; min-width: 190px;">
         <div onclick="triggerImageUpload('cropped')">줄여서 삽입하기</div>
@@ -1663,8 +1778,18 @@
     function redo() { if (redoStack.length === 0) return; hasUnsavedChanges = true; historyStack.push(captureState()); applyState(redoStack.pop()); requestRender(); }
     function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; requestRender(); }
     function toWorld(sX, sY) { const rect = canvas.getBoundingClientRect(); return { x: (sX - rect.left - currentOffset.x) / currentScale, y: (sY - rect.top - currentOffset.y) / currentScale }; }
-    function toggleHelp() { const t = document.getElementById('toolbar'); const isHidden = window.getComputedStyle(t).display === 'none'; t.style.display = isHidden ? 'block' : 'none'; }
     function toggleDropdown() { const d = document.getElementById('disk-dropdown'); d.style.display = (d.style.display === 'block') ? 'none' : 'block'; }
+    function openHelpModal() { 
+        const d = document.getElementById('disk-dropdown'); 
+        if (d) d.style.display = 'none'; 
+        const m = document.getElementById('help-modal-overlay'); 
+        if (m) m.style.display = 'flex'; 
+    }
+    function closeHelpModal() { 
+        const m = document.getElementById('help-modal-overlay'); 
+        if (m) m.style.display = 'none'; 
+    }
+    function toggleHelp() { openHelpModal(); }
     function toggleBgPanel() { 
         const p = document.getElementById('bg-panel'); 
         const isOpening = (p.style.display !== 'block'); 
@@ -2211,6 +2336,261 @@
         requestRender();
     }
 
+    // =========================================================================
+    // [프레젠테이션 모드 (Presentation Mode) 엔진]
+    // =========================================================================
+    let isPresentationMode = false;
+    let ptCurrentNode = null;
+    let ptStartNode = null;
+    let ptHistory = [];
+    let ptIsTransitioning = false;
+
+    function togglePresentationMode() {
+        if (isPresentationMode) exitPresentationMode();
+        else startPresentationMode();
+    }
+
+    function startPresentationMode() {
+        if (nodes.length === 0) {
+            showToast("프레젠테이션할 블럭이 없습니다.");
+            return;
+        }
+
+        // 선택된 단일 블럭이 있으면 그 블럭부터 시작, 없으면 루트 노드 또는 첫 번째 노드
+        let startTarget = null;
+        if (selectedNodes.length === 1 && !["area"].includes(selectedNodes[0].type)) {
+            startTarget = selectedNodes[0];
+        } else {
+            const incomingTargetSet = new Set();
+            edges.forEach(e => {
+                if (e.dirType === 0 || e.dirType === 2 || e.dirType === 3) incomingTargetSet.add(e.to);
+                if (e.dirType === 1 || e.dirType === 2 || e.dirType === 3) incomingTargetSet.add(e.from);
+            });
+            startTarget = nodes.find(n => !["area"].includes(n.type) && !incomingTargetSet.has(n)) || nodes.find(n => !["area"].includes(n.type)) || nodes[0];
+        }
+
+        isPresentationMode = true;
+        ptStartNode = startTarget;
+        ptCurrentNode = startTarget;
+        ptHistory = [startTarget];
+        ptIsTransitioning = false;
+
+        const ptIcon = document.getElementById('pt-icon');
+        if (ptIcon) {
+            ptIcon.classList.add('active');
+            ptIcon.innerText = "✏️";
+            ptIcon.title = "편집 모드로 복귀 (F5 또는 Esc)";
+        }
+        const hud = document.getElementById('pt-hud');
+        if (hud) hud.style.display = 'flex';
+
+        showToast("📽️ 프레젠테이션 모드 시작 (←/→: 이동, ↑/↓: 갈래, Esc: 종료)");
+        ptFocusNode(startTarget, true);
+    }
+
+    function exitPresentationMode() {
+        if (!isPresentationMode) return;
+        isPresentationMode = false;
+        ptCurrentNode = null;
+        ptStartNode = null;
+        ptHistory = [];
+        ptIsTransitioning = false;
+
+        const ptIcon = document.getElementById('pt-icon');
+        if (ptIcon) {
+            ptIcon.classList.remove('active');
+            ptIcon.innerText = "📽️";
+            ptIcon.title = "프레젠테이션 모드 시작 (F5)";
+        }
+        const hud = document.getElementById('pt-hud');
+        if (hud) hud.style.display = 'none';
+
+        showToast("✏️ 편집 모드로 복귀했습니다.");
+        requestRender();
+    }
+
+    // 블럭 종류별 자동 스마트 줌 배율 계산 (카드/밑줄: 화면 30%, 해시태그/투명텍스트: 화면 70%)
+    function getPtTargetScale(node) {
+        if (!node) return 1.0;
+        const nodeH = Math.max(25, node.height || 40);
+        const winH = window.innerHeight || 800;
+        let ratio = 0.30;
+        if (node.type === "3" || node.type === "4") {
+            ratio = 0.70;
+        } else if (node.type === "1" || node.type === "2") {
+            ratio = 0.30;
+        } else {
+            ratio = 0.35;
+        }
+        const s = (winH * ratio) / nodeH;
+        return Math.max(0.15, Math.min(3.5, s));
+    }
+
+    // 특정 노드를 화면 정중앙으로 스르륵 이동 및 스마트 줌
+    function ptFocusNode(node, autoScale = true) {
+        if (!node) return;
+        ptCurrentNode = node;
+        selectedNodes = [node];
+        selectedEdge = null;
+        hideBlockContextMenu();
+        hideEdgeContextMenu();
+
+        if (autoScale) {
+            targetScale = getPtTargetScale(node);
+        }
+        targetOffset.x = window.innerWidth / 2 - node.x * targetScale;
+        targetOffset.y = window.innerHeight / 2 - node.y * targetScale;
+
+        updatePtNavbar();
+        requestRender();
+    }
+
+    // 현재 노드에서 나가는 자식 노드 목록 구하기 (위 -> 아래 Y좌표 오름차순 정렬)
+    function getOutgoingChildren(curr) {
+        if (!curr) return [];
+        const children = [];
+        edges.forEach(e => {
+            if (e.from === curr && (e.dirType === 0 || e.dirType === 2 || e.dirType === 3)) {
+                if (e.to && nodes.includes(e.to) && !children.includes(e.to)) children.push(e.to);
+            } else if (e.to === curr && (e.dirType === 1 || e.dirType === 2 || e.dirType === 3)) {
+                if (e.from && nodes.includes(e.from) && !children.includes(e.from)) children.push(e.from);
+            }
+        });
+        children.sort((a, b) => a.y - b.y);
+        return children;
+    }
+
+    // 현재 노드로 들어오는 부모 노드 목록 구하기
+    function getIncomingParents(curr) {
+        if (!curr) return [];
+        const parents = [];
+        edges.forEach(e => {
+            if (e.to === curr && (e.dirType === 0 || e.dirType === 2 || e.dirType === 3)) {
+                if (e.from && nodes.includes(e.from) && !parents.includes(e.from)) parents.push(e.from);
+            } else if (e.from === curr && (e.dirType === 1 || e.dirType === 2 || e.dirType === 3)) {
+                if (e.to && nodes.includes(e.to) && !parents.includes(e.to)) parents.push(e.to);
+            }
+        });
+        parents.sort((a, b) => a.y - b.y);
+        return parents;
+    }
+
+    // 상단 HUD 네비게이션 바 상태 업데이트
+    function updatePtNavbar() {
+        if (!isPresentationMode || !ptCurrentNode) return;
+        const titleEl = document.getElementById('pt-title');
+        const branchEl = document.getElementById('pt-branch-info');
+        if (titleEl) {
+            const rawText = (ptCurrentNode.text || (ptCurrentNode.type === "image" ? "[이미지]" : (ptCurrentNode.type === "area" ? "[영역]" : "블럭"))).trim();
+            const firstLine = rawText.split('\n')[0].replace(/\[c:[^\]]+\]/g, '').replace(/[*_]/g, '');
+            titleEl.innerText = firstLine || "블럭";
+        }
+
+        const children = getOutgoingChildren(ptCurrentNode);
+        if (branchEl) {
+            if (children.length > 1) {
+                branchEl.style.display = 'inline-block';
+                branchEl.innerText = `갈래 ${children.length}개 (↑↓)`;
+            } else {
+                const parents = getIncomingParents(ptCurrentNode);
+                if (parents.length > 0) {
+                    const sibs = getOutgoingChildren(parents[0]);
+                    if (sibs.length > 1) {
+                        const curIdx = sibs.indexOf(ptCurrentNode) + 1;
+                        branchEl.style.display = 'inline-block';
+                        branchEl.innerText = `갈래 ${curIdx}/${sibs.length} (↑↓)`;
+                    } else {
+                        branchEl.style.display = 'none';
+                    }
+                } else {
+                    branchEl.style.display = 'none';
+                }
+            }
+        }
+    }
+
+    // 다음 블럭 이동 (→ 키)
+    function ptNavNext() {
+        if (!isPresentationMode || ptIsTransitioning || !ptCurrentNode) return;
+        const children = getOutgoingChildren(ptCurrentNode);
+        if (children.length > 0) {
+            ptHistory.push(ptCurrentNode);
+            ptFocusNode(children[0], true);
+        } else {
+            ptOnReachEnd();
+        }
+    }
+
+    // 이전 블럭 이동 (← 키)
+    function ptNavPrev() {
+        if (!isPresentationMode || ptIsTransitioning || !ptCurrentNode) return;
+        if (ptHistory.length > 1) {
+            ptHistory.pop(); // 현재 노드 제거
+            const prev = ptHistory[ptHistory.length - 1];
+            if (prev && nodes.includes(prev)) {
+                ptFocusNode(prev, true);
+                return;
+            }
+        }
+        const parents = getIncomingParents(ptCurrentNode);
+        if (parents.length > 0) {
+            ptFocusNode(parents[0], true);
+        } else {
+            showToast("시작 위치입니다.");
+        }
+    }
+
+    // 자식/형제 블럭 갈래 변경 (↑ / ↓ 키)
+    function ptNavBranch(delta) {
+        if (!isPresentationMode || ptIsTransitioning || !ptCurrentNode) return;
+        
+        // 1. 현재 노드가 어떤 부모의 자식(형제들 중 하나)인 경우: 형제 간 순환 이동
+        const parents = getIncomingParents(ptCurrentNode);
+        if (parents.length > 0) {
+            const siblings = getOutgoingChildren(parents[0]);
+            if (siblings.length > 1) {
+                const idx = siblings.indexOf(ptCurrentNode);
+                let nextIdx = idx + delta;
+                if (nextIdx < 0) nextIdx = siblings.length - 1;
+                if (nextIdx >= siblings.length) nextIdx = 0;
+                ptFocusNode(siblings[nextIdx], true);
+                return;
+            }
+        }
+
+        // 2. 현재 노드 자체에 자식이 여러 개 있는 경우: 자식 중 하나로 이동
+        const children = getOutgoingChildren(ptCurrentNode);
+        if (children.length > 1) {
+            const targetIdx = (delta > 0) ? 0 : children.length - 1;
+            ptHistory.push(ptCurrentNode);
+            ptFocusNode(children[targetIdx], true);
+            return;
+        }
+
+        showToast("전환할 다른 갈래가 없습니다.");
+    }
+
+    // 마지막 블럭 도달 시 전체 줌아웃 후 시작 블럭으로 복귀
+    function ptOnReachEnd() {
+        if (ptIsTransitioning) return;
+        ptIsTransitioning = true;
+        showToast("🏁 마지막 블럭에 도달했습니다. 시작 블럭으로 복귀합니다.");
+
+        // 1단계: 전체 뷰 조망 줌아웃
+        zoomExtents();
+
+        // 2단계: 850ms 후 시작 블럭으로 복귀
+        setTimeout(() => {
+            if (!isPresentationMode) { ptIsTransitioning = false; return; }
+            const target = (ptStartNode && nodes.includes(ptStartNode)) ? ptStartNode : (nodes[0] || null);
+            if (target) {
+                ptHistory = [target];
+                ptFocusNode(target, true);
+            }
+            ptIsTransitioning = false;
+        }, 900);
+    }
+
     async function saveProject() {
         document.getElementById('disk-dropdown').style.display = 'none';
         currentFileHandle = await getVerifiedHandle();
@@ -2349,6 +2729,55 @@
     function saveAsImage() { render(); const dataURL = canvas.toDataURL('image/jpeg', 0.9); const link = document.createElement('a'); link.href = dataURL; link.download = `idea_map_${Date.now()}.jpg`; document.body.appendChild(link); link.click(); document.body.removeChild(link); document.getElementById('disk-dropdown').style.display = 'none'; }
 
     window.addEventListener('keydown', (e) => {
+        const helpOverlay = document.getElementById('help-modal-overlay');
+        if (helpOverlay && helpOverlay.style.display === 'flex') {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeHelpModal();
+                return;
+            }
+        }
+
+        if (e.key === 'F5') {
+            e.preventDefault();
+            togglePresentationMode();
+            return;
+        }
+
+        if (isPresentationMode) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                exitPresentationMode();
+                return;
+            }
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault();
+                ptNavNext();
+                return;
+            }
+            if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+                e.preventDefault();
+                ptNavPrev();
+                return;
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                ptNavBranch(1);
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                ptNavBranch(-1);
+                return;
+            }
+            if (e.ctrlKey && e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                zoomExtents();
+                return;
+            }
+            return;
+        }
+
         if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 's') { e.preventDefault(); saveProject(); return; }
         if (e.ctrlKey && e.key.toLowerCase() === 'o') { e.preventDefault(); showOpenModal(); return; } 
 
@@ -2508,6 +2937,7 @@
     nodeInput.addEventListener('mousedown', () => clearTimeout(selectionTimeout));
 
     canvas.addEventListener('dblclick', (e) => { 
+        if (isPresentationMode) return;
         if (typeof isReadOnlyMode !== 'undefined' && isReadOnlyMode) return;
         hideBlockContextMenu();
         const wp = toWorld(e.clientX, e.clientY); 
@@ -2518,6 +2948,18 @@
 
     canvas.addEventListener('mousedown', (e) => {
         const wp = toWorld(e.clientX, e.clientY); lastMousePos = { x: e.clientX, y: e.clientY };
+        if (isPresentationMode) {
+            if (e.button === 2) { isPanning = true; requestRender(); return; }
+            if (e.button === 0) {
+                const hit = nodes.slice().reverse().find(n => !["area"].includes(n.type) && wp.x > n.x-n.width/2 && wp.x < n.x+n.width/2 && wp.y > n.y-n.height/2 && wp.y < n.y+n.height/2);
+                if (hit) {
+                    ptFocusNode(hit, true);
+                    ptHistory.push(hit);
+                }
+                return;
+            }
+            return;
+        }
         if (typeof isReadOnlyMode !== 'undefined' && isReadOnlyMode) {
             if (e.button === 2) { isPanning = true; requestRender(); return; }
             if (e.button === 0) {
@@ -3029,7 +3471,19 @@
                 });
             }
         }
-        if (sel && !["marker"].includes(n.type)) { 
+        if (isPresentationMode && n === ptCurrentNode) {
+            ctx.save();
+            ctx.shadowColor = "rgba(33, 150, 243, 0.4)";
+            ctx.shadowBlur = 15;
+            ctx.strokeStyle = "#2196f3";
+            ctx.lineWidth = 3 / currentScale;
+            const br = (n.borderRadius !== undefined) ? (n.borderRadius === 999 ? Math.min(n.width, n.height)/2 : n.borderRadius) : 12;
+            ctx.beginPath();
+            ctx.roundRect(n.x - n.width/2 - 4/currentScale, n.y - n.height/2 - 4/currentScale, n.width + 8/currentScale, n.height + 8/currentScale, br + 4/currentScale);
+            ctx.stroke();
+            ctx.restore();
+        }
+        if (sel && !["marker"].includes(n.type) && !isPresentationMode) { 
             ctx.shadowColor = "transparent";
             ctx.fillStyle = "#2196f3"; 
             ctx.globalAlpha = 1.0; 
