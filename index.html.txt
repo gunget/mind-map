@@ -1,10 +1,25 @@
 <!DOCTYPE html><html lang="ko"><head>
     <meta charset="UTF-8">
-    <title>아이디어 블럭 커넥터 v81</title>
+    <title>아이디어 블럭 커넥터 v82</title>
     <!--
     =============================================================================
     [아이디어 블럭 커넥터 버전 변경 이력 (Version Changelog)]
     =============================================================================
+    v82 (2026-10-29):
+    - [PT 모드 네비게이션 고도화] 고시인성 모던 다크 글래스 HUD & 자유 드래그 이동
+      * 네비게이션 바 본체를 우상단 기본 배치 및 자유 드래그 이동(Draggable) 지원
+      * 텍스트를 제거하고 콤팩트한 30px 원형 아이콘 버튼(◀, ▶, 📌, ✕) 체제로 개편
+      * 분기 갈래 칩 시인성 대폭 개선: 앰버 골드 배경(#ffb300)에 흑연 블랙 볼드 텍스트 적용(명암비 11.6:1)
+      * 핀(체크포인트) 활성화 시 비비드 레드(#e53935) 및 글로우 스타일 동적 연동
+    - [PT 모드 핀(Pin) 기능 최적화]
+      * 핀 꽂힘 위치를 블록 좌상단으로 변경 및 텍스트 겹침 방지 각도 최적화
+      * 코르크보드 표면 그림자 제거로 더욱 산뜻한 압정 비주얼 제공
+      * 마지막 블럭 도달 후 핀 복귀 시 네비게이션 바 핀 활성화 표시 동기화 자동 해제
+    - [PT 모드 스마트 줌 높이 반응형 최적화]
+      * 가로 55% 스마트 줌 기준, 세로로 긴 블럭의 경우 화면 높이 초과 시 화면 높이 90%로 자동 축소 최적화
+    - [시트 관리 환경 개선]
+      * 페이지 목록에서 시트 교체(열기) 및 새창(읽기 모드) 열기 시 배경 격자 표시 기본값 적용
+    -----------------------------------------------------------------------------
     v81 (2026-10-28):
     - [화살표 스타일 다변화] 4종 선 종류(실선, 점선, 긴 파선, 두 줄선) 및 꺾인선 화살표 헤드
       * 파워포인트 스타일의 4가지 선 종류 지원 (우클릭 서식 메뉴 또는 Shift+←/→)
@@ -81,76 +96,87 @@
 
         #pt-container, #help-container { top: 15px; left: 15px; z-index: 500; }
         
-        /* 프레젠테이션 모드 상단 HUD 제어바 */
+        /* 프레젠테이션 모드 상단 HUD 제어바 (고시인성 모던 다크 글래스 & 자유 드래그) */
         #pt-hud {
             display: none;
             position: fixed;
-            top: 18px;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 15px;
+            right: 80px;
+            left: auto;
+            transform: none;
             z-index: 9500;
-            background: rgba(35, 34, 30, 0.92);
+            background: rgba(28, 30, 36, 0.85);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             color: #ffffff;
-            border-radius: 30px;
-            padding: 7px 18px;
-            box-shadow: 0 10px 35px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 22px;
+            padding: 5px 8px;
+            box-shadow: 0 6px 22px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             align-items: center;
-            gap: 12px;
+            gap: 6px;
             font-size: 13px;
             font-weight: 600;
             user-select: none;
+            cursor: grab;
             animation: bfmFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .pt-badge {
-            background: #2196f3;
-            color: white;
-            font-size: 11px;
-            font-weight: 800;
-            padding: 3px 8px;
-            border-radius: 12px;
-            letter-spacing: 0.5px;
-        }
-        .pt-title {
-            max-width: 240px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 13px;
-            color: #f5f5f5;
+        #pt-hud:active {
+            cursor: grabbing;
         }
         .pt-branch-badge {
             font-size: 11px;
-            color: #ffd54f;
-            background: rgba(255, 213, 79, 0.18);
-            padding: 3px 8px;
-            border-radius: 10px;
+            font-weight: 800;
+            color: #1a1a1a;
+            background: #ffb300;
+            padding: 3px 9px;
+            border-radius: 12px;
+            margin-right: 2px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+            letter-spacing: -0.2px;
+            display: inline-flex;
+            align-items: center;
+            line-height: 1.2;
         }
         .pt-btn {
-            background: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.22);
             color: #ffffff;
-            border-radius: 16px;
-            padding: 4px 12px;
-            font-size: 11.5px;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.15s ease;
+            box-sizing: border-box;
+            line-height: 1;
         }
         .pt-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.38);
+            transform: scale(1.08);
+        }
+        .pt-btn:active {
+            transform: scale(0.95);
         }
         .pt-btn.pt-exit {
-            background: rgba(244, 67, 54, 0.25);
-            border-color: rgba(244, 67, 54, 0.5);
+            background: rgba(244, 67, 54, 0.22);
+            border-color: rgba(244, 67, 54, 0.45);
             color: #ff8a80;
+            font-size: 13.5px;
+            font-weight: 800;
         }
         .pt-btn.pt-exit:hover {
-            background: rgba(244, 67, 54, 0.5);
-            color: white;
+            background: #d32f2f;
+            border-color: #ef5350;
+            color: #ffffff;
+            transform: scale(1.08);
+            box-shadow: 0 0 10px rgba(211, 47, 47, 0.5);
         }
 
         /* 중앙 도움말 모달 스타일 */
@@ -784,15 +810,13 @@
         <div id="pt-icon" class="disk-btn" onclick="togglePresentationMode()" title="프레젠테이션 모드 시작 / 종료 (F5)">📽️</div>
     </div>
 
-    <!-- 프레젠테이션 모드 상단 HUD 제어 바 -->
-    <div id="pt-hud">
-        <span class="pt-badge">📽️ PT</span>
-        <span id="pt-title" class="pt-title">발표 모드</span>
+    <!-- 프레젠테이션 모드 상단 HUD 제어 바 (컴팩트 아이콘 모드) -->
+    <div id="pt-hud" title="드래그하여 위치를 자유롭게 이동할 수 있습니다">
         <span id="pt-branch-info" class="pt-branch-badge" style="display:none;">갈래 1/1</span>
-        <button type="button" class="pt-btn" onclick="ptNavPrev()" title="이전 블럭 (역방향 키 / Backspace)">◀ 이전</button>
-        <button type="button" class="pt-btn" onclick="ptNavNext()" title="다음 블럭 (진행방향 키 / Space, Enter)">다음 ▶</button>
-        <button type="button" id="pt-pin-btn" class="pt-btn" onclick="togglePtPin()" title="체크포인트 핀 고정 (F8)">📌 핀 꽂기 (F8)</button>
-        <button type="button" class="pt-btn pt-exit" onclick="exitPresentationMode()" title="종료 (Esc)">✕ 종료</button>
+        <button type="button" class="pt-btn" onclick="ptNavPrev()" title="이전 블럭 (역방향 키 / Backspace)">◀</button>
+        <button type="button" class="pt-btn" onclick="ptNavNext()" title="다음 블럭 (진행방향 키 / Space, Enter)">▶</button>
+        <button type="button" id="pt-pin-btn" class="pt-btn" onclick="togglePtPin()" title="체크포인트 핀 고정 (F8)">📌</button>
+        <button type="button" class="pt-btn pt-exit" onclick="exitPresentationMode()" title="종료 (Esc)">✕</button>
     </div>
 
     <!-- 중앙 도움말 팝업 모달 -->
@@ -810,7 +834,7 @@
                 - 이전 블럭 이동 : <b>화살표 역방향 키(←/→)</b> 또는 Backspace<br>
                 - 자식 블럭 갈래 변경 : 자식이 여러 개일 때 <b>키보드 상하(↑↓)</b><br>
                 - 체크포인트 핀(Pin) : <b>F8</b> (마지막 블럭 도달 시 핀 위치로 복귀 후 자동 해제)<br>
-                - 자동 스마트 줌 : 블럭 폭이 화면의 55%를 차지하도록 최적 배율 자동 조정<br>
+                - 자동 스마트 줌 : 블럭 폭이 화면의 55%에 맞도록 자동 줌 (높이가 화면 초과 시 높이 90%로 최적화)<br>
                 - 마지막 블럭 도달 시 : 화면 전체 줌아웃 후 핀 위치(또는 처음 블럭)로 자동 복귀<br>
                 - 마우스 배율 조절 : 마우스 휠로 자유롭게 줌인/줌아웃 조절 가능<br>
                 - 모드 종료 : <b>Esc</b> 키 또는 상단 HUD의 ✕ 종료 버튼<br><br>
@@ -1361,7 +1385,7 @@
     };
 
     function applyReadOnlyUI() {
-        bgSettings.showGrid = false;
+        if (bgSettings.showGrid === undefined) bgSettings.showGrid = true;
         const pageIcon = document.getElementById('page-icon');
         const pagePopup = document.getElementById('page-popup');
         const badge = document.getElementById('readonly-badge');
@@ -1369,10 +1393,10 @@
         if (pagePopup) pagePopup.style.display = 'none';
         if (badge) badge.style.display = 'block';
         const gridToggle = document.getElementById('grid-toggle');
-        if (gridToggle) gridToggle.checked = false;
+        if (gridToggle) gridToggle.checked = (bgSettings.showGrid !== undefined) ? !!bgSettings.showGrid : true;
         const smoothPanToggle = document.getElementById('smooth-pan-toggle');
         if (smoothPanToggle) smoothPanToggle.checked = (bgSettings.smoothPan !== undefined) ? !!bgSettings.smoothPan : true;
-        document.title = `${currentSheetName || '시트'} [읽기 모드] - 아이디어 블럭 커넥터 v81`;
+        document.title = `${currentSheetName || '시트'} [읽기 모드] - 아이디어 블럭 커넥터 v82`;
     }
 
     function restoreNormalUI() {
@@ -1380,7 +1404,7 @@
         const badge = document.getElementById('readonly-badge');
         if (pageIcon) pageIcon.style.display = 'flex';
         if (badge) badge.style.display = 'none';
-        document.title = `아이디어 블럭 커넥터 v81`;
+        document.title = `아이디어 블럭 커넥터 v82`;
     }
 
     function init() {
@@ -1409,6 +1433,7 @@
 
         updateMarkerGrid();
         updateBgSwatches();
+        initPtHudDrag();
         requestRender();
         animate();
     }
@@ -1697,6 +1722,7 @@
         applyState({ nodes: targetPage.nodes || [], edges: targetPage.edges || [] });
         if (targetPage.bgSettings) {
             bgSettings = targetPage.bgSettings;
+            if (bgSettings.showGrid === undefined) bgSettings.showGrid = true;
             updateBgSwatches();
             applyModalZoom();
         }
@@ -1729,7 +1755,7 @@
             ...(page.bgSettings || {}),
             color: (page.bgSettings && page.bgSettings.color) || "#fdfbf0",
             modalZoom: (page.bgSettings && page.bgSettings.modalZoom) || 1.0,
-            showGrid: false
+            showGrid: (page.bgSettings && page.bgSettings.showGrid !== undefined) ? !!page.bgSettings.showGrid : true
         };
         const targetPid = page.projectId || ("id_" + Date.now());
 
@@ -1738,10 +1764,9 @@
 
         // [읽기 모드 강제 적용] HTML 차원에서 body 클래스 및 타이틀 주입
         cleanHtml = cleanHtml.replace(/<body([^>]*)>/i, '<body$1 class="readonly-mode">');
-        cleanHtml = cleanHtml.replace(/<title>.*?<\/title>/i, `<title>${page.name} [읽기 모드] - 아이디어 블럭 커넥터 v81</title>`);
+        cleanHtml = cleanHtml.replace(/<title>.*?<\/title>/i, `<title>${page.name} [읽기 모드] - 아이디어 블럭 커넥터 v82</title>`);
         cleanHtml = cleanHtml.replace('id="page-icon"', 'id="page-icon" style="display:none !important;"');
         cleanHtml = cleanHtml.replace('id="readonly-badge" style="display:none;', 'id="readonly-badge" style="display:block !important;');
-        cleanHtml = cleanHtml.replace(/id="grid-toggle"[^>]*checked[^>]*/i, 'id="grid-toggle"');
 
         const blob = new Blob([cleanHtml], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
@@ -2430,12 +2455,22 @@
         requestRender();
     }
 
-    // 블럭 폭 기준 화면 가로 55% 스마트 줌 배율 계산
+    // 블럭 크기 기준 스마트 줌 배율 계산 (기본 폭 55%, 높이가 화면 초과 시 높이 90% 맞춤)
     function getPtTargetScale(node) {
         if (!node) return 1.0;
         const nodeW = Math.max(60, node.width || 120);
+        const nodeH = Math.max(40, node.height || 60);
         const winW = window.innerWidth || 1200;
-        const s = (winW * 0.55) / nodeW;
+        const winH = window.innerHeight || 800;
+
+        // 1. 기본: 블럭 폭 기준 화면 가로 55%
+        let s = (winW * 0.55) / nodeW;
+
+        // 2. 블럭의 높이가 화면의 높이보다 클 경우: 화면 크기의 90%를 차지하도록 조정
+        if (nodeH * s > winH) {
+            s = (winH * 0.90) / nodeH;
+        }
+
         return Math.max(0.15, Math.min(3.5, s));
     }
 
@@ -2517,6 +2552,64 @@
         return 'right';
     }
 
+    // PT 모드 상단 HUD 자유 드래그 이동 핸들러
+    function initPtHudDrag() {
+        const hud = document.getElementById('pt-hud');
+        if (!hud || hud._dragInitialized) return;
+        hud._dragInitialized = true;
+
+        let isDragging = false;
+        let startX = 0, startY = 0;
+        let initialLeft = 0, initialTop = 0;
+
+        hud.addEventListener('mousedown', (e) => {
+            // 버튼 클릭 시에는 드래그 방지
+            if (e.target.closest('button') || e.target.closest('input')) return;
+            isDragging = true;
+            hud.style.cursor = 'grabbing';
+            hud.style.userSelect = 'none';
+
+            const rect = hud.getBoundingClientRect();
+            hud.style.right = 'auto';
+            hud.style.bottom = 'auto';
+            hud.style.transform = 'none';
+            hud.style.left = rect.left + 'px';
+            hud.style.top = rect.top + 'px';
+
+            startX = e.clientX;
+            startY = e.clientY;
+            initialLeft = rect.left;
+            initialTop = rect.top;
+
+            const onMouseMove = (moveEv) => {
+                if (!isDragging) return;
+                const dx = moveEv.clientX - startX;
+                const dy = moveEv.clientY - startY;
+
+                let newLeft = initialLeft + dx;
+                let newTop = initialTop + dy;
+
+                const maxLeft = Math.max(0, window.innerWidth - hud.offsetWidth);
+                const maxTop = Math.max(0, window.innerHeight - hud.offsetHeight);
+                newLeft = Math.max(0, Math.min(maxLeft, newLeft));
+                newTop = Math.max(0, Math.min(maxTop, newTop));
+
+                hud.style.left = newLeft + 'px';
+                hud.style.top = newTop + 'px';
+            };
+
+            const onMouseUp = () => {
+                isDragging = false;
+                hud.style.cursor = 'grab';
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        });
+    }
+
     // 체크포인트 핀 토글 (F8)
     function togglePtPin() {
         if (!isPresentationMode || !ptCurrentNode) return;
@@ -2575,17 +2668,19 @@
         if (pinBtn) {
             if (ptPinnedNode) {
                 pinBtn.classList.add('active');
-                pinBtn.style.background = '#ffebee';
-                pinBtn.style.color = '#c62828';
-                pinBtn.style.borderColor = '#ef5350';
-                pinBtn.innerText = '📌 핀 해제 (F8)';
+                pinBtn.style.background = '#e53935';
+                pinBtn.style.color = '#ffffff';
+                pinBtn.style.borderColor = '#ff8a80';
+                pinBtn.style.boxShadow = '0 0 10px rgba(229, 57, 53, 0.7)';
+                pinBtn.innerText = '📌';
                 pinBtn.title = '현재 블럭에 핀이 꽂혀있습니다. 클릭하거나 F8을 누르면 해제됩니다.';
             } else {
                 pinBtn.classList.remove('active');
                 pinBtn.style.background = '';
                 pinBtn.style.color = '';
                 pinBtn.style.borderColor = '';
-                pinBtn.innerText = '📌 핀 꽂기 (F8)';
+                pinBtn.style.boxShadow = '';
+                pinBtn.innerText = '📌';
                 pinBtn.title = '현재 블럭에 체크포인트 핀을 꽂습니다 (F8). 마지막 도달 시 이 위치로 복귀합니다.';
             }
         }
@@ -2698,11 +2793,13 @@
             if (!isPresentationMode) { ptIsTransitioning = false; return; }
             if (returnTarget) {
                 ptHistory = [];
-                ptFocusNode(returnTarget, true);
                 if (hasPin) {
                     ptPinnedNode = null; // 핀 위치 복귀 후 소멸
                     showToast("📌 핀 위치에 도착하여 핀이 회수되었습니다.");
                 }
+                ptFocusNode(returnTarget, true);
+                updatePtNavbar();
+                requestRender();
             }
             ptIsTransitioning = false;
         }, 900);
@@ -3554,22 +3651,15 @@
     }
 
     
-    // [v82] 클래식 카드보드 게시판 푸시핀 렌더링 (레트로 레드 입체 압정 디자인)
+    // [v82] 클래식 카드보드 게시판 푸시핀 렌더링 (레트로 레드 입체 압정 디자인 - 그림자 없음)
     function drawBoardPushPin(ctx, x, y) {
         ctx.save();
         ctx.translate(x, y);
-        ctx.rotate(-25 * Math.PI / 180);
+        ctx.rotate(-20 * Math.PI / 180);
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
 
-        // 1. 코르크보드 표면 그림자
-        ctx.save();
-        ctx.translate(6, 6);
-        ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
-        ctx.beginPath();
-        ctx.ellipse(0, -14, 6, 12, 0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        // 2. 뾰족한 은빛 금속 바늘 침 (Needle)
+        // 1. 뾰족한 은빛 금속 바늘 침 (Needle)
         ctx.beginPath();
         ctx.moveTo(0, 0); // 꽂힌 끝점
         ctx.lineTo(0, -12);
@@ -3720,7 +3810,7 @@
             ctx.restore();
         }
         if (isPresentationMode && ptPinnedNode === n) {
-            const pinX = n.x + n.width / 2 - 4;
+            const pinX = n.x - n.width / 2 + 4;
             const pinY = n.y - n.height / 2 + 4;
             drawBoardPushPin(ctx, pinX, pinY);
         }
