@@ -213,9 +213,59 @@
         #help-modal-card::-webkit-scrollbar-thumb { background: #ded9c6; border-radius: 3px; }
 
         #save-menu { top: 15px; right: 15px; z-index: 150; }
-        .dropdown { display: none; position: absolute; top: 60px; right: 0; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); min-width: 170px; overflow: hidden; border: 1px solid #eee; }
-        .dropdown div { padding: 12px 20px; cursor: pointer; font-size: 14px; font-weight: bold; color: #4a483e; border-bottom: 1px solid #f5f5f5; }
-        .dropdown div:hover { background: #f8f9fa; color: #2196f3; }
+        .dropdown { 
+            display: none; 
+            position: absolute; 
+            top: 55px; 
+            right: 0; 
+            width: 190px;
+            background: rgba(255, 255, 255, 0.96); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 12px 14px; 
+            border-radius: 14px; 
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); 
+            border: 1px solid rgba(224, 220, 197, 0.7); 
+            box-sizing: border-box;
+            user-select: none;
+        }
+        .dropdown-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #f0eee2;
+        }
+        .dropdown-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #4a483e;
+            letter-spacing: -0.3px;
+        }
+        .dropdown-item, .dropdown > div:not(.dropdown-header):not(.dropdown-divider) { 
+            display: flex;
+            align-items: center;
+            padding: 8px 10px; 
+            cursor: pointer; 
+            font-size: 12.5px; 
+            font-weight: 600; 
+            color: #4a483e; 
+            border-radius: 7px;
+            transition: all 0.15s ease;
+            box-sizing: border-box;
+            border-bottom: none;
+        }
+        .dropdown-item:hover, .dropdown > div:not(.dropdown-header):not(.dropdown-divider):hover { 
+            background: #f0eee2; 
+            color: #2196f3; 
+        }
+        .dropdown-divider {
+            height: 1px;
+            background: #f0eee2;
+            margin: 6px 0;
+            padding: 0 !important;
+        }
 
         #image-menu { top: 50%; left: 15px; transform: translateY(-110%); z-index: 100; }
 
@@ -827,18 +877,6 @@
                 <span>💡</span> 아이디어 블럭 커넥터 사용 가이드
             </h3>
             <div style="font-size:11.5px; color:#5d5b4a; line-height:1.75;">
-                <b>[프레젠테이션 모드 (PT)]</b><br>
-                - 모드 시작/종료 : 좌상단 📽️ 아이콘 또는 <b>F5</b><br>
-                - 특정 블럭부터 시작 : 블럭 선택 후 📽️ 아이콘 클릭<br>
-                - 다음 블럭 이동 : <b>화살표 진행방향 키(←/→)</b> 또는 Space / Enter<br>
-                - 이전 블럭 이동 : <b>화살표 역방향 키(←/→)</b> 또는 Backspace<br>
-                - 자식 블럭 갈래 변경 : 자식이 여러 개일 때 <b>키보드 상하(↑↓)</b><br>
-                - 체크포인트 핀(Pin) : <b>F8</b> (마지막 블럭 도달 시 핀 위치로 복귀 후 자동 해제)<br>
-                - 자동 스마트 줌 : 블럭 폭이 화면의 55%에 맞도록 자동 줌 (높이가 화면 초과 시 높이 90%로 최적화)<br>
-                - 마지막 블럭 도달 시 : 화면 전체 줌아웃 후 핀 위치(또는 처음 블럭)로 자동 복귀<br>
-                - 마우스 배율 조절 : 마우스 휠로 자유롭게 줌인/줌아웃 조절 가능<br>
-                - 모드 종료 : <b>Esc</b> 키 또는 상단 HUD의 ✕ 종료 버튼<br><br>
-
                 <b>[입력창 편집]</b><br>
                 - 창 활성화 : 마우스 왼쪽 더블클릭 또는 Shift+Enter<br>
                 - 창 타입 선택 : 모달 내 <b>Ctrl + 키보드 상하(↑↓)</b><br>
@@ -873,7 +911,18 @@
                 - 다중 선택 : Ctrl + 좌클릭 (객체 추가/해제)<br>
                 - 다른 탭으로 복사 : 선택 후 <b>Ctrl+C</b> / 다른 탭에서 <b>Ctrl+V</b><br>
                 - 덮어쓰기 저장 : 우상단 💾 아이콘 또는 <b>Ctrl+Shift+S</b><br>
-                - 파일 불러오기 : 메뉴 클릭 또는 <b>Ctrl+O</b>
+                - 파일 불러오기 : 메뉴 클릭 또는 <b>Ctrl+O</b><br><br>
+
+                <b>[프레젠테이션 모드 (PT)]</b><br>
+                - 모드 시작/종료 : 좌상단 📽️ 아이콘 또는 <b>F5</b><br>
+                - 특정 블럭부터 시작 : 블럭 선택 후 📽️ 아이콘 클릭<br>
+                - 다음 블럭 이동 : <b>화살표 진행방향 키(←/→)</b> 또는 Space / Enter<br>
+                - 이전 블럭 이동 : <b>화살표 역방향 키(←/→)</b> 또는 Backspace<br>
+                - 자식 블럭 갈래 변경 : 자식이 여러 개일 때 <b>키보드 상하(↑↓)</b><br>
+                - 체크포인트 핀(Pin) : <b>F8</b> (마지막 블럭 도달 시 핀 위치로 복귀 후 자동 해제)<br>
+                - 마지막 블럭 도달 시 : 화면 전체 줌아웃 후 핀 위치(또는 처음 블럭)로 자동 복귀<br>
+                - 마우스 배율 조절 : 마우스 휠로 자유롭게 줌인/줌아웃 조절 가능<br>
+                - 모드 종료 : <b>Esc</b> 키 또는 상단 HUD의 ✕ 종료 버튼
             </div>
         </div>
     </div>
@@ -881,19 +930,27 @@
     <div id="save-menu" class="floating-ui">
         <div class="disk-btn" id="main-disk-btn" onclick="toggleDropdown()">💾</div>
         <div class="dropdown" id="disk-dropdown">
-            <div onclick="saveProject()">저장하기 (덮어쓰기)</div>
-            <div onclick="exportProject()">새파일로 저장</div>
-            <div onclick="startNewSheet()" style="color: #2196f3; font-weight: 800;">새로운 시트로 시작 (+보관)</div>
-            <div onclick="showOpenModal()">프로젝트 불러오기</div>
-            <div onclick="saveAsImage()">이미지로 내보내기 (JPEG)</div>
-            <div onclick="openHelpModal()" style="border-top: 1px solid #f0f0f0; color: #5d5b4a;">💡 도움말 (사용법)</div>
+            <div class="dropdown-header">
+                <span class="dropdown-title">저장 및 파일</span>
+            </div>
+            <div class="dropdown-item" onclick="saveProject()">저장하기</div>
+            <div class="dropdown-item" onclick="exportProject()">새파일로 저장</div>
+            <div class="dropdown-item" onclick="startNewSheet()" style="color: #2196f3; font-weight: 700;">새로운 시트로 시작</div>
+            <div class="dropdown-item" onclick="showOpenModal()">프로젝트 불러오기</div>
+            <div class="dropdown-item" onclick="saveAsImage()">이미지로 내보내기</div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item" onclick="openHelpModal()" style="color: #5d5b4a;">도움말</div>
         </div>
         <input type="file" id="file-input" style="display:none" onchange="importProject(event)">
     </div><div id="image-menu" class="floating-ui">
     <div id="image-icon" onclick="toggleImageDropdown()">🖼️</div>
-    <div class="dropdown" id="image-dropdown" style="top: 0; left: 60px; right: auto; min-width: 190px;">
-        <div onclick="triggerImageUpload('cropped')">줄여서 삽입하기</div>
-        <div onclick="triggerImageUpload('original')">원래 사이즈로 삽입하기</div>
+    <div class="dropdown" id="image-dropdown" style="top: 0; left: 60px; right: auto; min-width: 180px;">
+        <div class="dropdown-header">
+            <span class="dropdown-title">이미지 삽입</span>
+        </div>
+        <div class="dropdown-item" onclick="triggerImageUpload('cropped')">줄여서 삽입하기</div>
+        <div class="dropdown-item" onclick="triggerImageUpload('original')">원래 사이즈로 삽입하기</div>
+    </div>
     </div>
     <input type="file" id="image-upload" style="display:none" accept="image/*" onchange="handleImageUpload(event)"></div><div id="marker-menu" class="floating-ui">
     <div id="marker-icon" onclick="toggleMarkerPalette()">🔢</div>
