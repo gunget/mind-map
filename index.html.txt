@@ -1,10 +1,21 @@
 <!DOCTYPE html><html lang="ko"><head>
     <meta charset="UTF-8">
-    <title>아이디어 블럭 커넥터 v83</title>
+    <title>아이디어 블럭 커넥터 v84</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <!--
     =============================================================================
     [아이디어 블럭 커넥터 버전 변경 이력 (Version Changelog)]
     =============================================================================
+    v84 (2026-11-27):
+    - [Google Drive 클라우드 업로드 & 가져오기 연동]
+      * 좌상단 저장 메뉴에 Drive 업로드, Drive에서 가져오기, Drive 연결 설정 추가
+      * 전용 폴더 최소 권한(drive.file) 적용 및 타인도 교체 가능한 OAuth 2.0 클라이언트 ID 설정 UI
+      * 중복 파일 업로드 시 매번 [기존 파일 덮어쓰기 / 새 파일로 저장] 선택 지원으로 덮어쓰기 실수 방지
+      * 메모리 전용 세션 토큰 및 원클릭 로그아웃(연결 해제) 지원
+    - [페이지 목록 파일명 실시간 검색 기능]
+      * 하단 페이지 목록 팝업 상단에 파일 이름 실시간 검색창 및 옆 ✕ 초기화 버튼 배치
+      * 일치 키워드 하이라이트, 필터링 카운트 표시, 원본 인덱스 보존 및 캔버스 단축키 충돌 방어
+    -----------------------------------------------------------------------------
     v83 (2026-10-31):
     - [텍스트 입력창 UX 고도화 & 줌 제어 미니 팝업]
       * 슬라이더 제거 및 메뉴바 돋보기(🔍) 아이콘 위쪽 미니 팝업([−] 100% [+]) 크기 조절 도입
@@ -385,6 +396,75 @@
             color: #4a483e;
             letter-spacing: -0.3px;
         }
+        .page-search-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 2px 0 6px 0;
+        }
+        .page-search-input-wrap {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        .page-search-icon {
+            position: absolute;
+            left: 10px;
+            font-size: 12px;
+            color: #8c8979;
+            pointer-events: none;
+        }
+        #page-search-input {
+            width: 100%;
+            padding: 6px 10px 6px 30px;
+            border: 1px solid #e0dcc5;
+            border-radius: 8px;
+            background: #fdfbf0;
+            font-size: 12px;
+            color: #4a483e;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        }
+        #page-search-input:focus {
+            background: #ffffff;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.12);
+        }
+        .page-search-clear-btn {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e0dcc5;
+            border-radius: 8px;
+            background: #f7f6f0;
+            color: #8c8979;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            padding: 0;
+        }
+        .page-search-clear-btn:hover {
+            background: #f0eee2;
+            color: #d32f2f;
+            border-color: #d3cfae;
+        }
+        .page-search-clear-btn.has-query {
+            background: #fff5f5;
+            color: #d32f2f;
+            border-color: rgba(211, 47, 47, 0.35);
+        }
+        .page-search-highlight {
+            background: rgba(255, 213, 79, 0.45);
+            color: #2c2b25;
+            border-radius: 2px;
+            padding: 0 1px;
+        }
         .page-list { max-height: 260px; overflow-y: auto; padding: 2px 0; }
         .page-list::-webkit-scrollbar { width: 6px; }
         .page-list::-webkit-scrollbar-thumb { background: #ded9c6; border-radius: 3px; }
@@ -569,6 +649,242 @@
             background: #f0eee2; 
             color: #2196f3; 
             border-color: #d0cbb5;
+        }
+        /* Google Drive 연동 모달 UI (캔버스 설정/파일 열기 모달과 통일된 모던 글래스모피즘) */
+        .gdrive-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 5100;
+            justify-content: center;
+            align-items: center;
+        }
+        .gdrive-box {
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            padding: 16px 20px 18px 20px;
+            border-radius: 14px;
+            width: 440px;
+            max-width: 92vw;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.16);
+            border: 1px solid rgba(224, 220, 197, 0.85);
+            box-sizing: border-box;
+            user-select: none;
+            color: #4a483e;
+        }
+        .gdrive-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f0eee2;
+            gap: 8px;
+        }
+        .gdrive-title {
+            font-size: 13.5px;
+            font-weight: bold;
+            color: #4a483e;
+            letter-spacing: -0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .gdrive-header-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .gdrive-status-pill {
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            background: #f0eee2;
+            color: #7e7b64;
+        }
+        .gdrive-status-pill.connected {
+            background: rgba(46, 125, 50, 0.12);
+            color: #2e7d32;
+        }
+        .gdrive-mini-btn {
+            background: #f7f6f0;
+            border: 1px solid #e0dcc5;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #5d5b4a;
+            padding: 3px 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .gdrive-mini-btn:hover {
+            background: #f0eee2;
+            color: #2196f3;
+        }
+        .gdrive-mini-btn.logout:hover {
+            color: #d32f2f;
+            border-color: rgba(211, 47, 47, 0.35);
+            background: #fff5f5;
+        }
+        .gdrive-field {
+            margin-bottom: 12px;
+            text-align: left;
+        }
+        .gdrive-label {
+            display: block;
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #6d6a59;
+            margin-bottom: 5px;
+        }
+        .gdrive-input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ded9c6;
+            border-radius: 8px;
+            background: #fdfbf0;
+            font-size: 12px;
+            color: #4a483e;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+        }
+        .gdrive-input:focus {
+            background: #ffffff;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.12);
+        }
+        .gdrive-help-text {
+            font-size: 11px;
+            color: #8c8979;
+            margin-top: 4px;
+            line-height: 1.45;
+        }
+        .gdrive-btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .gdrive-btn {
+            flex: 1;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        .gdrive-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .gdrive-btn-primary {
+            background: #2196f3;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.22);
+        }
+        .gdrive-btn-primary:hover:not(:disabled) {
+            background: #1976d2;
+        }
+        .gdrive-btn-secondary {
+            background: #f7f6f0;
+            color: #4a483e;
+            border: 1px solid #e0dcc5;
+        }
+        .gdrive-btn-secondary:hover:not(:disabled) {
+            background: #f0eee2;
+            color: #2196f3;
+        }
+        .gdrive-btn-warn {
+            background: #f57c00;
+            color: #ffffff;
+        }
+        .gdrive-btn-warn:hover:not(:disabled) {
+            background: #e65100;
+        }
+        .gdrive-duplicate-box {
+            display: none;
+            margin-top: 12px;
+            padding: 11px 12px;
+            border-radius: 8px;
+            background: #fff8e1;
+            border: 1px solid #ffe082;
+            text-align: left;
+        }
+        .gdrive-duplicate-msg {
+            font-size: 12px;
+            font-weight: 700;
+            color: #e65100;
+            margin-bottom: 8px;
+            line-height: 1.45;
+        }
+        .gdrive-file-list {
+            max-height: 280px;
+            overflow-y: auto;
+            padding: 2px 0;
+            margin-top: 4px;
+        }
+        .gdrive-file-list::-webkit-scrollbar { width: 6px; }
+        .gdrive-file-list::-webkit-scrollbar-thumb { background: #ded9c6; border-radius: 3px; }
+        .gdrive-file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            transition: background 0.15s ease;
+        }
+        .gdrive-file-item:hover {
+            background: #f7f6f0;
+        }
+        .gdrive-file-meta {
+            flex: 1;
+            min-width: 0;
+            text-align: left;
+        }
+        .gdrive-file-name {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #4a483e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .gdrive-file-date {
+            font-size: 10.5px;
+            color: #8c8979;
+            margin-top: 2px;
+        }
+        .gdrive-guide-details {
+            margin-top: 12px;
+            padding: 8px 10px;
+            background: #fdfbf0;
+            border: 1px solid #e8e4d2;
+            border-radius: 8px;
+            font-size: 11px;
+            color: #5d5b4a;
+            text-align: left;
+            line-height: 1.55;
+        }
+        .gdrive-guide-details summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: #1976d2;
+            outline: none;
         }
         #toast-msg { display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(33, 150, 243, 0.9); color: white; padding: 12px 24px; border-radius: 30px; z-index: 6000; font-size: 14px; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
 
@@ -1225,6 +1541,10 @@
             <div class="dropdown-item" onclick="showOpenModal()">프로젝트 불러오기</div>
             <div class="dropdown-item" onclick="saveAsImage()">이미지로 내보내기</div>
             <div class="dropdown-divider"></div>
+            <div class="dropdown-item" onclick="openGoogleDriveUploadModal()" style="color: #1976d2;">☁️ Drive에 업로드</div>
+            <div class="dropdown-item" onclick="openGoogleDriveListModal()" style="color: #2e7d32;">☁️ Drive에서 가져오기</div>
+            <div class="dropdown-item" onclick="openGoogleDriveSettingsModal()" style="color: #6d6a59;">⚙️ Drive 연결 설정</div>
+            <div class="dropdown-divider"></div>
             <div class="dropdown-item" onclick="openHelpModal()" style="color: #5d5b4a;">도움말</div>
         </div>
         <input type="file" id="file-input" style="display:none" onchange="importProject(event)">
@@ -1289,7 +1609,14 @@
                 <span class="page-popup-title">페이지 목록</span>
                 <span class="action-btn" id="sort-btn" onclick="toggleSortPages(event)" style="font-weight:600; color:#6d6a59; background:#f0eee2; padding:2px 7px; font-size:11px;" title="이름순으로 번갈아 정렬합니다">이름순 ▲</span>
             </div>
-            <span style="font-size:11.5px; font-weight:600; color:#8c8979;">(총 <span id="page-count">0</span>장)</span>
+            <span id="page-count-wrap" style="font-size:11.5px; font-weight:600; color:#8c8979;">(총 <span id="page-count">0</span>장)</span>
+        </div>
+        <div class="page-search-row" onclick="event.stopPropagation()">
+            <div class="page-search-input-wrap">
+                <span class="page-search-icon">🔍</span>
+                <input type="text" id="page-search-input" placeholder="파일 이름 검색..." oninput="onPageSearchInput(this.value)" onkeydown="onPageSearchKeydown(event)">
+            </div>
+            <button type="button" id="page-search-clear" class="page-search-clear-btn" onclick="clearPageSearch(event)" title="검색어 지우기 (전체 목록 보기)">✕</button>
         </div>
         <div class="page-list" id="page-list-container">
             <!-- 페이지 항목 렌더링 영역 -->
@@ -1313,7 +1640,100 @@
             <button type="button" class="recent-btn recent-btn-primary" id="btn-load-recent" onclick="loadRecentFile()">이 파일 바로 열기</button>
             <button type="button" class="recent-btn recent-btn-secondary" onclick="triggerNativeOpen()">다른 위치에서 열기 (탐색기)</button>
         </div>
-    </div></div><!-- 토스트 알림 메시지 --><div id="toast-msg"></div><div id="zoom-info">100%</div><canvas id="canvas"></canvas>
+    </div></div>
+    <!-- Google Drive 연결 설정 모달 -->
+    <div id="gdrive-settings-modal" class="gdrive-modal-overlay" onclick="if(event.target === this) closeGoogleDriveSettingsModal()">
+        <div class="gdrive-box" onclick="event.stopPropagation()">
+            <div class="gdrive-header">
+                <span class="gdrive-title">⚙️ Google Drive 연결 설정</span>
+                <div class="gdrive-header-right">
+                    <span id="gdrive-settings-status" class="gdrive-status-pill">로그오프</span>
+                    <button type="button" class="recent-close-btn" onclick="closeGoogleDriveSettingsModal()" title="닫기 (Esc)">✕</button>
+                </div>
+            </div>
+            <div class="gdrive-field">
+                <label class="gdrive-label" for="gdrive-client-id-input">OAuth 2.0 클라이언트 ID (교체 가능)</label>
+                <input type="text" id="gdrive-client-id-input" class="gdrive-input" placeholder="예: 1234567890-xxxx.apps.googleusercontent.com" autocomplete="off">
+                <div class="gdrive-help-text">※ 이 브라우저에만 저장되며, HTML 작업 파일에는 포함되지 않습니다.</div>
+            </div>
+            <div class="gdrive-field">
+                <label class="gdrive-label" for="gdrive-folder-name-input">드라이브 전용 폴더 이름</label>
+                <input type="text" id="gdrive-folder-name-input" class="gdrive-input" placeholder="IdeaBlock_MindMaps" autocomplete="off">
+                <div class="gdrive-help-text">※ 최소 권한(<code>drive.file</code>)을 사용하여 이 앱이 만든 전용 폴더와 파일만 안전하게 접근합니다.</div>
+            </div>
+            <div class="gdrive-btn-row">
+                <button type="button" class="gdrive-btn gdrive-btn-primary" onclick="saveGoogleDriveSettings()">설정 저장</button>
+                <button type="button" class="gdrive-btn gdrive-btn-secondary" onclick="resetGoogleDriveSettings()">초기화</button>
+                <button type="button" id="gdrive-settings-logout-btn" class="gdrive-btn gdrive-btn-secondary" onclick="logoutGoogleDrive()" style="display:none; color:#d32f2f;">로그아웃</button>
+            </div>
+            <details class="gdrive-guide-details">
+                <summary>클라이언트 ID 발급 방법 보기 (무료)</summary>
+                <div style="margin-top:6px;">
+                    1. Google Cloud Console에서 새 프로젝트 생성 후 <b>Google Drive API</b> 사용 설정<br>
+                    2. <b>OAuth 동의 화면(외부)</b> 설정 후 <b>테스트 사용자</b>에 본인 구글 이메일 등록<br>
+                    3. <b>OAuth 클라이언트 ID(웹 애플리케이션)</b> 생성 시 승인된 자바스크립트 원본에 현재 웹 주소(예: <code>https://gunget.github.io</code>) 등록<br>
+                    4. 발급된 <b>클라이언트 ID</b>를 위 입력란에 붙여넣고 저장
+                </div>
+            </details>
+        </div>
+    </div>
+
+    <!-- Google Drive 업로드 모달 -->
+    <div id="gdrive-upload-modal" class="gdrive-modal-overlay" onclick="if(event.target === this) closeGoogleDriveUploadModal()">
+        <div class="gdrive-box" onclick="event.stopPropagation()">
+            <div class="gdrive-header">
+                <span class="gdrive-title">☁️ Google Drive에 업로드</span>
+                <div class="gdrive-header-right">
+                    <button type="button" id="gdrive-upload-logout-btn" class="gdrive-mini-btn logout" onclick="logoutGoogleDrive()" style="display:none;">로그아웃</button>
+                    <button type="button" class="recent-close-btn" onclick="closeGoogleDriveUploadModal()" title="닫기 (Esc)">✕</button>
+                </div>
+            </div>
+            <div class="gdrive-field">
+                <label class="gdrive-label" for="gdrive-upload-filename">저장할 파일 이름 (.html 자동 부여)</label>
+                <input type="text" id="gdrive-upload-filename" class="gdrive-input" placeholder="파일 이름을 입력하세요" oninput="resetDriveDuplicatePrompt()">
+                <div class="gdrive-help-text">저장 폴더: <b id="gdrive-upload-folder-label">IdeaBlock_MindMaps</b></div>
+            </div>
+            <div id="gdrive-duplicate-box" class="gdrive-duplicate-box">
+                <div id="gdrive-duplicate-msg" class="gdrive-duplicate-msg">같은 이름의 파일이 이미 존재합니다.</div>
+                <div class="gdrive-btn-row" style="margin-top:6px;">
+                    <button type="button" class="gdrive-btn gdrive-btn-warn" id="gdrive-btn-overwrite" onclick="confirmDriveOverwrite()">기존 파일 덮어쓰기</button>
+                    <button type="button" class="gdrive-btn gdrive-btn-primary" id="gdrive-btn-save-new" onclick="confirmDriveSaveAsNew()">새 파일로 저장</button>
+                </div>
+            </div>
+            <div class="gdrive-btn-row" id="gdrive-upload-default-actions">
+                <button type="button" class="gdrive-btn gdrive-btn-primary" id="gdrive-btn-start-upload" onclick="executeDriveUploadCheck()">업로드 시작</button>
+                <button type="button" class="gdrive-btn gdrive-btn-secondary" onclick="closeGoogleDriveUploadModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Drive 파일 목록(가져오기) 모달 -->
+    <div id="gdrive-open-modal" class="gdrive-modal-overlay" onclick="if(event.target === this) closeGoogleDriveListModal()">
+        <div class="gdrive-box" style="width: 480px;" onclick="event.stopPropagation()">
+            <div class="gdrive-header">
+                <span class="gdrive-title">☁️ Google Drive에서 가져오기</span>
+                <div class="gdrive-header-right">
+                    <button type="button" class="gdrive-mini-btn" onclick="refreshGoogleDriveList()" title="목록 새로고침">↻</button>
+                    <button type="button" id="gdrive-list-logout-btn" class="gdrive-mini-btn logout" onclick="logoutGoogleDrive()" style="display:none;">로그아웃</button>
+                    <button type="button" class="recent-close-btn" onclick="closeGoogleDriveListModal()" title="닫기 (Esc)">✕</button>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; font-size:11px; color:#8c8979;">
+                <span>전용 폴더: <b id="gdrive-list-folder-label" style="color:#4a483e;">IdeaBlock_MindMaps</b></span>
+                <span id="gdrive-list-count-wrap">(총 0개)</span>
+            </div>
+            <div class="page-search-row">
+                <div class="page-search-input-wrap">
+                    <span class="page-search-icon">🔍</span>
+                    <input type="text" id="gdrive-search-input" class="gdrive-input" style="padding:6px 10px 6px 30px;" placeholder="드라이브 파일 이름 검색..." oninput="onGDriveSearchInput(this.value)" onkeydown="onGDriveSearchKeydown(event)">
+                </div>
+                <button type="button" id="gdrive-search-clear" class="page-search-clear-btn" onclick="clearGDriveSearch(event)" title="검색어 지우기">✕</button>
+            </div>
+            <div id="gdrive-file-list" class="gdrive-file-list">
+                <div style="padding:24px 10px; text-align:center; color:#8c8979; font-size:12px;">목록을 불러오는 중...</div>
+            </div>
+        </div>
+    </div><!-- 토스트 알림 메시지 --><div id="toast-msg"></div><div id="zoom-info">100%</div><canvas id="canvas"></canvas>
     <!-- 우클릭 미니 서식 팝업 (PowerPoint / Figma 스타일) -->
     <div id="block-context-menu" class="floating-format-menu" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
         <!-- 1. 글자 크기 (- / +) -->
@@ -1560,6 +1980,7 @@
     let subPages = []; 
     let isUploadingPages = false; 
     let pageSortAsc = true; 
+    let pageSearchQuery = ""; 
 
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
@@ -1752,7 +2173,7 @@
         if (gridToggle) gridToggle.checked = (bgSettings.showGrid !== undefined) ? !!bgSettings.showGrid : true;
         const smoothPanToggle = document.getElementById('smooth-pan-toggle');
         if (smoothPanToggle) smoothPanToggle.checked = (bgSettings.smoothPan !== undefined) ? !!bgSettings.smoothPan : true;
-        document.title = `${currentSheetName || '시트'} [읽기 모드] - 아이디어 블럭 커넥터 v83`;
+        document.title = `${currentSheetName || '시트'} [읽기 모드] - 아이디어 블럭 커넥터 v84`;
     }
 
     function restoreNormalUI() {
@@ -1760,7 +2181,7 @@
         const badge = document.getElementById('readonly-badge');
         if (pageIcon) pageIcon.style.display = 'flex';
         if (badge) badge.style.display = 'none';
-        document.title = `아이디어 블럭 커넥터 v83`;
+        document.title = `아이디어 블럭 커넥터 v84`;
     }
 
     function init() {
@@ -1980,7 +2401,57 @@
         showToast(`'${finalName}'(으)로 보관되고, 새 시트가 열렸습니다.`);
     }
 
-    function togglePagePopup() { const pp = document.getElementById('page-popup'); if (pp.style.display === 'block') { pp.style.display = 'none'; } else { renderPageList(); pp.style.display = 'block'; } }
+    function togglePagePopup() {
+        const pp = document.getElementById('page-popup');
+        if (pp.style.display === 'block') {
+            pp.style.display = 'none';
+        } else {
+            const searchInput = document.getElementById('page-search-input');
+            if (searchInput) searchInput.value = pageSearchQuery;
+            updatePageSearchClearBtn();
+            renderPageList();
+            pp.style.display = 'block';
+            if (searchInput) setTimeout(() => searchInput.focus(), 30);
+        }
+    }
+
+    function updatePageSearchClearBtn() {
+        const clearBtn = document.getElementById('page-search-clear');
+        if (!clearBtn) return;
+        if (pageSearchQuery.trim().length > 0) clearBtn.classList.add('has-query');
+        else clearBtn.classList.remove('has-query');
+    }
+
+    function onPageSearchInput(val) {
+        pageSearchQuery = val || "";
+        updatePageSearchClearBtn();
+        renderPageList();
+    }
+
+    function clearPageSearch(e) {
+        if (e) e.stopPropagation();
+        pageSearchQuery = "";
+        const searchInput = document.getElementById('page-search-input');
+        if (searchInput) {
+            searchInput.value = "";
+            searchInput.focus();
+        }
+        updatePageSearchClearBtn();
+        renderPageList();
+    }
+
+    function onPageSearchKeydown(e) {
+        e.stopPropagation();
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            if (pageSearchQuery.trim().length > 0) {
+                clearPageSearch(e);
+            } else {
+                const pp = document.getElementById('page-popup');
+                if (pp) pp.style.display = 'none';
+            }
+        }
+    }
     function triggerSubpageUpload(e) { if(e) e.stopPropagation(); document.getElementById('subpage-upload').click(); }
 
     function sortSubPages() {
@@ -2077,29 +2548,83 @@
         } 
     }
 
+    function buildPageTitleFragment(name, query) {
+        const frag = document.createDocumentFragment();
+        frag.appendChild(document.createTextNode('📄 '));
+        const text = name || '';
+        if (!query) {
+            frag.appendChild(document.createTextNode(text));
+            return frag;
+        }
+        const lowerText = text.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+        let pos = 0;
+        let matchIdx = lowerText.indexOf(lowerQuery, pos);
+        while (matchIdx !== -1) {
+            if (matchIdx > pos) {
+                frag.appendChild(document.createTextNode(text.slice(pos, matchIdx)));
+            }
+            const mark = document.createElement('mark');
+            mark.className = 'page-search-highlight';
+            mark.textContent = text.slice(matchIdx, matchIdx + lowerQuery.length);
+            frag.appendChild(mark);
+            pos = matchIdx + lowerQuery.length;
+            matchIdx = lowerText.indexOf(lowerQuery, pos);
+        }
+        if (pos < text.length) {
+            frag.appendChild(document.createTextNode(text.slice(pos)));
+        }
+        return frag;
+    }
+
     function renderPageList() {
         const container = document.getElementById('page-list-container'); 
         container.innerHTML = ''; 
-        document.getElementById('page-count').innerText = subPages.length;
+        const q = (pageSearchQuery || '').trim().toLowerCase();
+        const filtered = subPages
+            .map((page, idx) => ({ page, idx }))
+            .filter(({ page }) => !q || (page.name || '').toLowerCase().includes(q));
+
+        const countWrap = document.getElementById('page-count-wrap');
+        if (countWrap) {
+            if (q && subPages.length > 0) {
+                countWrap.innerHTML = `(검색 <span id="page-search-count">${filtered.length}</span> / 총 <span id="page-count">${subPages.length}</span>장)`;
+            } else {
+                countWrap.innerHTML = `(총 <span id="page-count">${subPages.length}</span>장)`;
+            }
+        }
+
         if (subPages.length === 0) { 
             container.innerHTML = '<div style="padding:24px 10px; text-align:center; color:#aaa; font-size:12px;">+ 버튼을 눌러 파일을 추가하세요.</div>'; 
             return; 
         }
-        subPages.forEach((page, idx) => {
+        if (filtered.length === 0) {
+            container.innerHTML = '<div style="padding:24px 10px; text-align:center; color:#8c8979; font-size:12px;">일치하는 파일이 없습니다.</div>';
+            return;
+        }
+        filtered.forEach(({ page, idx }) => {
             const div = document.createElement('div'); 
             div.className = 'page-item';
-            div.innerHTML = `
-                <div class="page-item-title" title="${page.name}">📄 ${page.name}</div>
-                <div style="display:flex; gap:6px; align-items:center; flex-shrink:0;">
-                    <span class="action-btn action-open" title="새 탭에서 참고용으로 띄우기">새창↗</span>
-                    <span class="action-btn action-edit" title="페이지 이름 수정">수정</span>
-                    <span class="action-btn action-swap" title="현재 화면을 이 파일로 교체합니다">교체</span>
-                    <span class="action-btn action-del" title="목록에서 제거">삭제</span>
-                </div>`;
-            div.querySelector('.action-open').onclick = (e) => { e.stopPropagation(); openSubpage(idx); };
-            div.querySelector('.action-edit').onclick = (e) => { e.stopPropagation(); renameSubpage(idx); };
-            div.querySelector('.action-swap').onclick = (e) => { e.stopPropagation(); swapSubpage(idx); };
-            div.querySelector('.action-del').onclick = (e) => { e.stopPropagation(); deleteSubpage(idx); };
+            const titleEl = document.createElement('div');
+            titleEl.className = 'page-item-title';
+            titleEl.title = page.name || '';
+            titleEl.appendChild(buildPageTitleFragment(page.name, q));
+
+            const actionsEl = document.createElement('div');
+            actionsEl.style.cssText = 'display:flex; gap:6px; align-items:center; flex-shrink:0;';
+            actionsEl.innerHTML = `
+                <span class="action-btn action-open" title="새 탭에서 참고용으로 띄우기">새창↗</span>
+                <span class="action-btn action-edit" title="페이지 이름 수정">수정</span>
+                <span class="action-btn action-swap" title="현재 화면을 이 파일로 교체합니다">교체</span>
+                <span class="action-btn action-del" title="목록에서 제거">삭제</span>`;
+
+            actionsEl.querySelector('.action-open').onclick = (e) => { e.stopPropagation(); openSubpage(idx); };
+            actionsEl.querySelector('.action-edit').onclick = (e) => { e.stopPropagation(); renameSubpage(idx); };
+            actionsEl.querySelector('.action-swap').onclick = (e) => { e.stopPropagation(); swapSubpage(idx); };
+            actionsEl.querySelector('.action-del').onclick = (e) => { e.stopPropagation(); deleteSubpage(idx); };
+
+            div.appendChild(titleEl);
+            div.appendChild(actionsEl);
             container.appendChild(div);
         });
     }
@@ -2173,7 +2698,7 @@
 
         // [읽기 모드 강제 적용] HTML 차원에서 body 클래스 및 타이틀 주입
         cleanHtml = cleanHtml.replace(/<body([^>]*)>/i, '<body$1 class="readonly-mode">');
-        cleanHtml = cleanHtml.replace(/<title>.*?<\/title>/i, `<title>${page.name} [읽기 모드] - 아이디어 블럭 커넥터 v83</title>`);
+        cleanHtml = cleanHtml.replace(/<title>.*?<\/title>/i, `<title>${page.name} [읽기 모드] - 아이디어 블럭 커넥터 v84</title>`);
         cleanHtml = cleanHtml.replace('id="page-icon"', 'id="page-icon" style="display:none !important;"');
         cleanHtml = cleanHtml.replace('id="readonly-badge" style="display:none;', 'id="readonly-badge" style="display:block !important;');
 
@@ -3374,6 +3899,593 @@
         } else { projectId = "id_" + Date.now(); }
     }
 
+    // =========================================================================
+    // [Google Drive 클라우드 업로드 / 불러오기 연동 모듈 (OAuth 2.0 GIS + Drive API v3)]
+    // =========================================================================
+    const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+    const GDRIVE_LS_CLIENT_ID = 'mindmap_gdrive_client_id';
+    const GDRIVE_LS_FOLDER_NAME = 'mindmap_gdrive_folder_name';
+    const GDRIVE_DEFAULT_FOLDER = 'IdeaBlock_MindMaps';
+
+    let gdriveAccessToken = null; // 메모리 세션 전용 (파일/스토리지 영구 저장 안 함)
+    let gdriveTokenExpiry = 0;
+    let gdriveCachedFolderId = null;
+    let gdriveFilesCache = [];
+    let gdriveSearchQuery = '';
+    let gdrivePendingDuplicateFile = null;
+    let gdrivePendingFolderId = null;
+
+    function getGDriveClientId() {
+        try { return (localStorage.getItem(GDRIVE_LS_CLIENT_ID) || '').trim(); } catch (e) { return ''; }
+    }
+
+    function getGDriveFolderName() {
+        try { return (localStorage.getItem(GDRIVE_LS_FOLDER_NAME) || '').trim() || GDRIVE_DEFAULT_FOLDER; } catch (e) { return GDRIVE_DEFAULT_FOLDER; }
+    }
+
+    function escapeDriveQueryStr(str) {
+        return String(str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    function updateGoogleDriveAuthUI() {
+        const isConn = Boolean(gdriveAccessToken && Date.now() < gdriveTokenExpiry);
+        const statusEl = document.getElementById('gdrive-settings-status');
+        if (statusEl) {
+            statusEl.textContent = isConn ? '로그인됨' : '로그오프';
+            if (isConn) statusEl.classList.add('connected');
+            else statusEl.classList.remove('connected');
+        }
+        ['gdrive-settings-logout-btn', 'gdrive-upload-logout-btn', 'gdrive-list-logout-btn'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.style.display = isConn ? '' : 'none';
+        });
+    }
+
+    function openGoogleDriveSettingsModal() {
+        document.getElementById('disk-dropdown').style.display = 'none';
+        const cidInput = document.getElementById('gdrive-client-id-input');
+        const folderInput = document.getElementById('gdrive-folder-name-input');
+        if (cidInput) cidInput.value = getGDriveClientId();
+        if (folderInput) folderInput.value = getGDriveFolderName();
+        updateGoogleDriveAuthUI();
+        document.getElementById('gdrive-settings-modal').style.display = 'flex';
+    }
+
+    function closeGoogleDriveSettingsModal() {
+        const m = document.getElementById('gdrive-settings-modal');
+        if (m) m.style.display = 'none';
+    }
+
+    function saveGoogleDriveSettings() {
+        const cidInput = document.getElementById('gdrive-client-id-input');
+        const folderInput = document.getElementById('gdrive-folder-name-input');
+        const cid = cidInput ? cidInput.value.trim() : '';
+        const folder = (folderInput ? folderInput.value.trim() : '') || GDRIVE_DEFAULT_FOLDER;
+        const prevCid = getGDriveClientId();
+        const prevFolder = getGDriveFolderName();
+        try {
+            if (cid) localStorage.setItem(GDRIVE_LS_CLIENT_ID, cid);
+            else localStorage.removeItem(GDRIVE_LS_CLIENT_ID);
+            localStorage.setItem(GDRIVE_LS_FOLDER_NAME, folder);
+        } catch (e) {
+            alert('브라우저 저장소(localStorage)에 설정을 저장할 수 없습니다.');
+            return;
+        }
+        if (cid !== prevCid) {
+            gdriveAccessToken = null;
+            gdriveTokenExpiry = 0;
+            gdriveCachedFolderId = null;
+        } else if (folder !== prevFolder) {
+            gdriveCachedFolderId = null;
+        }
+        updateGoogleDriveAuthUI();
+        closeGoogleDriveSettingsModal();
+        showToast('Google Drive 연결 설정이 저장되었습니다.');
+    }
+
+    function resetGoogleDriveSettings() {
+        if (!confirm('저장된 OAuth 클라이언트 ID와 폴더 설정을 초기화하시겠습니까?')) return;
+        try {
+            localStorage.removeItem(GDRIVE_LS_CLIENT_ID);
+            localStorage.removeItem(GDRIVE_LS_FOLDER_NAME);
+        } catch (e) {}
+        logoutGoogleDrive(true);
+        const cidInput = document.getElementById('gdrive-client-id-input');
+        const folderInput = document.getElementById('gdrive-folder-name-input');
+        if (cidInput) cidInput.value = '';
+        if (folderInput) folderInput.value = GDRIVE_DEFAULT_FOLDER;
+        showToast('Google Drive 설정이 초기화되었습니다.');
+    }
+
+    function logoutGoogleDrive(silent = false) {
+        const tokenToRevoke = gdriveAccessToken;
+        gdriveAccessToken = null;
+        gdriveTokenExpiry = 0;
+        gdriveCachedFolderId = null;
+        gdriveFilesCache = [];
+        updateGoogleDriveAuthUI();
+        if (tokenToRevoke && window.google && window.google.accounts && window.google.accounts.oauth2) {
+            try { window.google.accounts.oauth2.revoke(tokenToRevoke, () => {}); } catch (e) {}
+        }
+        const openModal = document.getElementById('gdrive-open-modal');
+        if (openModal && openModal.style.display === 'flex') closeGoogleDriveListModal();
+        const uploadModal = document.getElementById('gdrive-upload-modal');
+        if (uploadModal && uploadModal.style.display === 'flex') closeGoogleDriveUploadModal();
+        if (!silent) showToast('Google Drive에서 로그아웃(연결 해제)되었습니다.');
+    }
+
+    function ensureGoogleDriveAuth() {
+        return new Promise((resolve, reject) => {
+            if (window.location.protocol === 'file:') {
+                alert('Google Drive 연동은 내 컴퓨터 파일(file://)이 아닌 웹 주소(예: GitHub Pages https://... 또는 http://localhost)에서 접속했을 때만 사용할 수 있습니다.');
+                reject(new Error('FILE_PROTOCOL_BLOCKED'));
+                return;
+            }
+            const clientId = getGDriveClientId();
+            if (!clientId) {
+                showToast('먼저 Google Drive 클라이언트 ID를 설정해 주세요.');
+                openGoogleDriveSettingsModal();
+                reject(new Error('MISSING_CLIENT_ID'));
+                return;
+            }
+            if (gdriveAccessToken && Date.now() < gdriveTokenExpiry - 60000) {
+                resolve(gdriveAccessToken);
+                return;
+            }
+            if (!(window.google && window.google.accounts && window.google.accounts.oauth2)) {
+                alert('Google 로그인 스크립트를 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 새로고침해 주세요.');
+                reject(new Error('GIS_NOT_LOADED'));
+                return;
+            }
+            try {
+                const tokenClient = window.google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: GDRIVE_SCOPE,
+                    callback: (resp) => {
+                        if (resp && resp.access_token) {
+                            gdriveAccessToken = resp.access_token;
+                            const expiresIn = Number(resp.expires_in) || 3500;
+                            gdriveTokenExpiry = Date.now() + expiresIn * 1000;
+                            updateGoogleDriveAuthUI();
+                            resolve(gdriveAccessToken);
+                        } else {
+                            const errMsg = (resp && (resp.error_description || resp.error)) || '구글 로그인이 취소되었거나 실패했습니다.';
+                            reject(new Error(errMsg));
+                        }
+                    },
+                    error_callback: (err) => {
+                        reject(new Error((err && err.message) || '구글 로그인 팝업이 닫혔습니다.'));
+                    }
+                });
+                tokenClient.requestAccessToken({ prompt: 'select_account' });
+            } catch (err) {
+                reject(err);
+            }
+        });
+    }
+
+    async function gdriveFetch(url, options = {}) {
+        const token = await ensureGoogleDriveAuth();
+        const headers = Object.assign({}, options.headers || {}, {
+            'Authorization': 'Bearer ' + token
+        });
+        const res = await fetch(url, Object.assign({}, options, { headers }));
+        if (res.status === 401) {
+            gdriveAccessToken = null;
+            gdriveTokenExpiry = 0;
+            updateGoogleDriveAuthUI();
+            throw new Error('로그인 세션이 만료되었습니다. 다시 시도해 주세요.');
+        }
+        return res;
+    }
+
+    async function ensureDriveFolder() {
+        const folderName = getGDriveFolderName();
+        if (gdriveCachedFolderId) {
+            try {
+                const verifyRes = await gdriveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(gdriveCachedFolderId)}?fields=id,name,trashed`);
+                if (verifyRes.ok) {
+                    const info = await verifyRes.json();
+                    if (info && info.id && !info.trashed && info.name === folderName) return info.id;
+                }
+            } catch (e) {}
+            gdriveCachedFolderId = null;
+        }
+        const q = `mimeType='application/vnd.google-apps.folder' and name='${escapeDriveQueryStr(folderName)}' and trashed=false`;
+        const searchRes = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)&spaces=drive`);
+        if (!searchRes.ok) throw new Error('전용 폴더 조회 실패 (' + searchRes.status + ')');
+        const searchData = await searchRes.json();
+        if (searchData.files && searchData.files.length > 0) {
+            gdriveCachedFolderId = searchData.files[0].id;
+            return gdriveCachedFolderId;
+        }
+        const createRes = await gdriveFetch('https://www.googleapis.com/drive/v3/files?fields=id,name', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+            body: JSON.stringify({
+                name: folderName,
+                mimeType: 'application/vnd.google-apps.folder'
+            })
+        });
+        if (!createRes.ok) throw new Error('전용 폴더 생성 실패 (' + createRes.status + ')');
+        const created = await createRes.json();
+        gdriveCachedFolderId = created.id;
+        return gdriveCachedFolderId;
+    }
+
+    function buildCurrentProjectHtml() {
+        const overlayIds = ['gdrive-settings-modal', 'gdrive-upload-modal', 'gdrive-open-modal', 'recent-file-modal'];
+        const prevDisplays = {};
+        overlayIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                prevDisplays[id] = el.style.display;
+                el.style.display = 'none';
+            }
+        });
+        const dd = document.getElementById('disk-dropdown');
+        const prevDd = dd ? dd.style.display : '';
+        if (dd) dd.style.display = 'none';
+
+        const state = captureState();
+        const dataStr = serializeDataHolder(state, subPages, currentSheetName, projectId, bgSettings);
+        const baseHtml = document.documentElement.outerHTML;
+        const finalHtml = injectDataHolder(baseHtml, dataStr);
+
+        overlayIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && prevDisplays[id] !== undefined) el.style.display = prevDisplays[id];
+        });
+        if (dd) dd.style.display = prevDd;
+        return finalHtml;
+    }
+
+    function buildMultipartDriveBody(metadata, htmlContent, boundary) {
+        const delimiter = '\r\n--' + boundary + '\r\n';
+        const closeDelim = '\r\n--' + boundary + '--';
+        return delimiter +
+            'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+            JSON.stringify(metadata) +
+            delimiter +
+            'Content-Type: text/html; charset=UTF-8\r\n\r\n' +
+            htmlContent +
+            closeDelim;
+    }
+
+    function normalizeHtmlFileName(rawName) {
+        let name = (rawName || '').trim() || 'idea_map';
+        name = name.replace(/[\\/:*?"<>|]/g, '_');
+        if (!name.toLowerCase().endsWith('.html')) name += '.html';
+        return name;
+    }
+
+    function openGoogleDriveUploadModal() {
+        document.getElementById('disk-dropdown').style.display = 'none';
+        if (window.location.protocol === 'file:') {
+            alert('Google Drive 연동은 내 컴퓨터 파일(file://)이 아닌 웹 주소(예: GitHub Pages https://... 또는 http://localhost)에서 접속했을 때만 사용할 수 있습니다.');
+            return;
+        }
+        if (!getGDriveClientId()) {
+            showToast('먼저 Google Drive 클라이언트 ID를 설정해 주세요.');
+            openGoogleDriveSettingsModal();
+            return;
+        }
+        const input = document.getElementById('gdrive-upload-filename');
+        const defaultName = (currentFileHandle && currentFileHandle.name) ? currentFileHandle.name.replace(/\.html$/i, '') : (currentSheetName || 'idea_map');
+        if (input) input.value = defaultName;
+        const folderLabel = document.getElementById('gdrive-upload-folder-label');
+        if (folderLabel) folderLabel.textContent = getGDriveFolderName();
+        resetDriveDuplicatePrompt();
+        updateGoogleDriveAuthUI();
+        document.getElementById('gdrive-upload-modal').style.display = 'flex';
+        if (input) setTimeout(() => { input.focus(); input.select(); }, 30);
+    }
+
+    function closeGoogleDriveUploadModal() {
+        const m = document.getElementById('gdrive-upload-modal');
+        if (m) m.style.display = 'none';
+        resetDriveDuplicatePrompt();
+    }
+
+    function resetDriveDuplicatePrompt() {
+        gdrivePendingDuplicateFile = null;
+        gdrivePendingFolderId = null;
+        const dupBox = document.getElementById('gdrive-duplicate-box');
+        const defActions = document.getElementById('gdrive-upload-default-actions');
+        if (dupBox) dupBox.style.display = 'none';
+        if (defActions) defActions.style.display = 'flex';
+    }
+
+    function setDriveUploadBusy(isBusy, labelText) {
+        const ids = ['gdrive-btn-start-upload', 'gdrive-btn-overwrite', 'gdrive-btn-save-new'];
+        ids.forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.disabled = isBusy;
+        });
+        const startBtn = document.getElementById('gdrive-btn-start-upload');
+        if (startBtn) startBtn.textContent = isBusy ? (labelText || '처리 중...') : '업로드 시작';
+    }
+
+    async function executeDriveUploadCheck() {
+        const input = document.getElementById('gdrive-upload-filename');
+        const fileName = normalizeHtmlFileName(input ? input.value : '');
+        setDriveUploadBusy(true, '드라이브 확인 중...');
+        try {
+            const folderId = await ensureDriveFolder();
+            const q = `name='${escapeDriveQueryStr(fileName)}' and '${escapeDriveQueryStr(folderId)}' in parents and trashed=false`;
+            const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,modifiedTime)&spaces=drive`);
+            if (!res.ok) throw new Error('중복 파일 확인 실패 (' + res.status + ')');
+            const data = await res.json();
+            if (data.files && data.files.length > 0) {
+                gdrivePendingDuplicateFile = data.files[0];
+                gdrivePendingFolderId = folderId;
+                const msgEl = document.getElementById('gdrive-duplicate-msg');
+                if (msgEl) msgEl.textContent = `'${fileName}' 파일이 이미 존재합니다. 기존 파일에 덮어쓸까요, 새 파일로 저장할까요?`;
+                document.getElementById('gdrive-duplicate-box').style.display = 'block';
+                document.getElementById('gdrive-upload-default-actions').style.display = 'none';
+                setDriveUploadBusy(false);
+                return;
+            }
+            await performDriveFileUpload({ fileName, folderId, overwriteFileId: null });
+        } catch (err) {
+            setDriveUploadBusy(false);
+            if (err && err.message !== 'MISSING_CLIENT_ID' && err.message !== 'FILE_PROTOCOL_BLOCKED') {
+                alert('Google Drive 업로드 오류: ' + err.message);
+            }
+        }
+    }
+
+    async function confirmDriveOverwrite() {
+        if (!gdrivePendingDuplicateFile) return;
+        const input = document.getElementById('gdrive-upload-filename');
+        const fileName = normalizeHtmlFileName(input ? input.value : gdrivePendingDuplicateFile.name);
+        setDriveUploadBusy(true, '덮어쓰는 중...');
+        try {
+            await performDriveFileUpload({
+                fileName,
+                folderId: gdrivePendingFolderId,
+                overwriteFileId: gdrivePendingDuplicateFile.id
+            });
+        } catch (err) {
+            setDriveUploadBusy(false);
+            alert('덮어쓰기 실패: ' + err.message);
+        }
+    }
+
+    async function confirmDriveSaveAsNew() {
+        const input = document.getElementById('gdrive-upload-filename');
+        const rawBase = (input ? input.value.trim() : 'idea_map').replace(/\.html$/i, '');
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+        const newFileName = normalizeHtmlFileName(`${rawBase}_${stamp}`);
+        setDriveUploadBusy(true, '새 파일 저장 중...');
+        try {
+            const folderId = gdrivePendingFolderId || await ensureDriveFolder();
+            await performDriveFileUpload({
+                fileName: newFileName,
+                folderId,
+                overwriteFileId: null
+            });
+        } catch (err) {
+            setDriveUploadBusy(false);
+            alert('새 파일 저장 실패: ' + err.message);
+        }
+    }
+
+    async function performDriveFileUpload({ fileName, folderId, overwriteFileId }) {
+        const htmlContent = buildCurrentProjectHtml();
+        const boundary = '-------IdeaBlockBoundary' + Date.now();
+        const metadata = overwriteFileId
+            ? { name: fileName, mimeType: 'text/html' }
+            : { name: fileName, mimeType: 'text/html', parents: [folderId] };
+        const body = buildMultipartDriveBody(metadata, htmlContent, boundary);
+        const url = overwriteFileId
+            ? `https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(overwriteFileId)}?uploadType=multipart&fields=id,name,modifiedTime`
+            : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,modifiedTime';
+
+        const res = await gdriveFetch(url, {
+            method: overwriteFileId ? 'PATCH' : 'POST',
+            headers: { 'Content-Type': 'multipart/related; boundary=' + boundary },
+            body
+        });
+        if (!res.ok) {
+            const errTxt = await res.text().catch(() => '');
+            throw new Error('업로드 실패 (' + res.status + ') ' + errTxt.slice(0, 120));
+        }
+        hasUnsavedChanges = false;
+        setDriveUploadBusy(false);
+        closeGoogleDriveUploadModal();
+        const diskBtn = document.getElementById('main-disk-btn');
+        if (diskBtn) { diskBtn.innerText = '✅'; setTimeout(() => { diskBtn.innerText = '💾'; }, 1500); }
+        showToast(`☁️ '${fileName}' Google Drive 업로드 완료!`);
+    }
+
+    async function openGoogleDriveListModal() {
+        document.getElementById('disk-dropdown').style.display = 'none';
+        if (window.location.protocol === 'file:') {
+            alert('Google Drive 연동은 내 컴퓨터 파일(file://)이 아닌 웹 주소(예: GitHub Pages https://... 또는 http://localhost)에서 접속했을 때만 사용할 수 있습니다.');
+            return;
+        }
+        if (!getGDriveClientId()) {
+            showToast('먼저 Google Drive 클라이언트 ID를 설정해 주세요.');
+            openGoogleDriveSettingsModal();
+            return;
+        }
+        const folderLabel = document.getElementById('gdrive-list-folder-label');
+        if (folderLabel) folderLabel.textContent = getGDriveFolderName();
+        const searchInput = document.getElementById('gdrive-search-input');
+        if (searchInput) searchInput.value = gdriveSearchQuery;
+        updateGDriveSearchClearBtn();
+        updateGoogleDriveAuthUI();
+        document.getElementById('gdrive-open-modal').style.display = 'flex';
+        await refreshGoogleDriveList();
+        if (searchInput) setTimeout(() => searchInput.focus(), 30);
+    }
+
+    function closeGoogleDriveListModal() {
+        const m = document.getElementById('gdrive-open-modal');
+        if (m) m.style.display = 'none';
+    }
+
+    function updateGDriveSearchClearBtn() {
+        const clearBtn = document.getElementById('gdrive-search-clear');
+        if (!clearBtn) return;
+        if (gdriveSearchQuery.trim().length > 0) clearBtn.classList.add('has-query');
+        else clearBtn.classList.remove('has-query');
+    }
+
+    function onGDriveSearchInput(val) {
+        gdriveSearchQuery = val || '';
+        updateGDriveSearchClearBtn();
+        renderGoogleDriveFileList();
+    }
+
+    function clearGDriveSearch(e) {
+        if (e) e.stopPropagation();
+        gdriveSearchQuery = '';
+        const input = document.getElementById('gdrive-search-input');
+        if (input) { input.value = ''; input.focus(); }
+        updateGDriveSearchClearBtn();
+        renderGoogleDriveFileList();
+    }
+
+    function onGDriveSearchKeydown(e) {
+        e.stopPropagation();
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            if (gdriveSearchQuery.trim().length > 0) clearGDriveSearch(e);
+            else closeGoogleDriveListModal();
+        }
+    }
+
+    async function refreshGoogleDriveList() {
+        const listEl = document.getElementById('gdrive-file-list');
+        if (listEl) listEl.innerHTML = '<div style="padding:24px 10px; text-align:center; color:#8c8979; font-size:12px;">Google Drive 파일 목록을 불러오는 중...</div>';
+        try {
+            const folderId = await ensureDriveFolder();
+            const q = `'${escapeDriveQueryStr(folderId)}' in parents and trashed=false and mimeType!='application/vnd.google-apps.folder'`;
+            const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&orderBy=modifiedTime desc&pageSize=100&fields=files(id,name,modifiedTime)&spaces=drive`);
+            if (!res.ok) throw new Error('목록 조회 실패 (' + res.status + ')');
+            const data = await res.json();
+            gdriveFilesCache = (data.files || []).filter(f => (f.name || '').toLowerCase().endsWith('.html'));
+            renderGoogleDriveFileList();
+        } catch (err) {
+            if (listEl) {
+                listEl.innerHTML = `<div style="padding:20px 10px; text-align:center; color:#d32f2f; font-size:12px;">목록을 불러오지 못했습니다.<br><span style="color:#8c8979; font-size:11px;">${(err && err.message) || ''}</span></div>`;
+            }
+        }
+    }
+
+    function formatDriveDate(isoStr) {
+        if (!isoStr) return '';
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return '';
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function renderGoogleDriveFileList() {
+        const listEl = document.getElementById('gdrive-file-list');
+        if (!listEl) return;
+        listEl.innerHTML = '';
+
+        const q = (gdriveSearchQuery || '').trim().toLowerCase();
+        const filtered = gdriveFilesCache.filter(f => !q || (f.name || '').toLowerCase().includes(q));
+        const countWrap = document.getElementById('gdrive-list-count-wrap');
+        if (countWrap) {
+            countWrap.textContent = (q && gdriveFilesCache.length > 0)
+                ? `(검색 ${filtered.length} / 총 ${gdriveFilesCache.length}개)`
+                : `(총 ${gdriveFilesCache.length}개)`;
+        }
+
+        if (gdriveFilesCache.length === 0) {
+            listEl.innerHTML = '<div style="padding:24px 10px; text-align:center; color:#8c8979; font-size:12px;">전용 폴더에 업로드된 파일이 없습니다.<br>먼저 [Drive에 업로드]로 파일을 올려보세요.</div>';
+            return;
+        }
+        if (filtered.length === 0) {
+            listEl.innerHTML = '<div style="padding:24px 10px; text-align:center; color:#8c8979; font-size:12px;">일치하는 파일이 없습니다.</div>';
+            return;
+        }
+
+        filtered.forEach(file => {
+            const row = document.createElement('div');
+            row.className = 'gdrive-file-item';
+
+            const meta = document.createElement('div');
+            meta.className = 'gdrive-file-meta';
+
+            const nameEl = document.createElement('div');
+            nameEl.className = 'gdrive-file-name';
+            nameEl.title = file.name || '';
+            nameEl.appendChild(buildPageTitleFragment(file.name, q));
+
+            const dateEl = document.createElement('div');
+            dateEl.className = 'gdrive-file-date';
+            dateEl.textContent = formatDriveDate(file.modifiedTime);
+
+            meta.appendChild(nameEl);
+            meta.appendChild(dateEl);
+
+            const actions = document.createElement('div');
+            actions.style.cssText = 'display:flex; gap:6px; align-items:center; flex-shrink:0;';
+
+            const openBtn = document.createElement('span');
+            openBtn.className = 'action-btn action-open';
+            openBtn.textContent = '열기';
+            openBtn.title = '이 파일을 현재 화면으로 불러옵니다';
+            openBtn.onclick = (e) => { e.stopPropagation(); loadFromGoogleDrive(file.id, file.name); };
+
+            const delBtn = document.createElement('span');
+            delBtn.className = 'action-btn action-del';
+            delBtn.textContent = '삭제';
+            delBtn.title = 'Google Drive 휴지통으로 이동합니다';
+            delBtn.onclick = (e) => { e.stopPropagation(); deleteFromGoogleDrive(file.id, file.name); };
+
+            actions.appendChild(openBtn);
+            actions.appendChild(delBtn);
+
+            row.appendChild(meta);
+            row.appendChild(actions);
+            listEl.appendChild(row);
+        });
+    }
+
+    async function loadFromGoogleDrive(fileId, fileName) {
+        if (hasUnsavedChanges && !confirm(`현재 작업 중인 변경사항이 저장되지 않았습니다.\n'${fileName}' 파일을 불러오시겠습니까?`)) {
+            return;
+        }
+        showToast(`☁️ '${fileName}' 다운로드 중...`);
+        try {
+            const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media`);
+            if (!res.ok) throw new Error('파일 다운로드 실패 (' + res.status + ')');
+            const text = await res.text();
+            processImportedText(text, fileName);
+            currentFileHandle = null;
+            closeGoogleDriveListModal();
+            showToast(`☁️ '${fileName}' 파일을 불러왔습니다!`);
+        } catch (err) {
+            alert('Google Drive 불러오기 실패: ' + err.message);
+        }
+    }
+
+    async function deleteFromGoogleDrive(fileId, fileName) {
+        if (!confirm(`'${fileName}' 파일을 Google Drive 휴지통으로 이동하시겠습니까?`)) return;
+        try {
+            const res = await gdriveFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+                body: JSON.stringify({ trashed: true })
+            });
+            if (!res.ok) throw new Error('삭제 실패 (' + res.status + ')');
+            gdriveFilesCache = gdriveFilesCache.filter(f => f.id !== fileId);
+            renderGoogleDriveFileList();
+            showToast(`'${fileName}' 파일이 휴지통으로 이동되었습니다.`);
+        } catch (err) {
+            alert('삭제 실패: ' + err.message);
+        }
+    }
+
     function saveAsImage() { render(); const dataURL = canvas.toDataURL('image/jpeg', 0.9); const link = document.createElement('a'); link.href = dataURL; link.download = `idea_map_${Date.now()}.jpg`; document.body.appendChild(link); link.click(); document.body.removeChild(link); document.getElementById('disk-dropdown').style.display = 'none'; }
 
     window.addEventListener('keydown', (e) => {
@@ -3483,6 +4595,9 @@
             return;
         }
         if (document.getElementById('recent-file-modal').style.display === 'flex') { if (e.key === 'Escape') { closeOpenModal(); } return; }
+        if (document.getElementById('gdrive-settings-modal').style.display === 'flex') { if (e.key === 'Escape') { closeGoogleDriveSettingsModal(); } return; }
+        if (document.getElementById('gdrive-upload-modal').style.display === 'flex') { if (e.key === 'Escape') { closeGoogleDriveUploadModal(); } return; }
+        if (document.getElementById('gdrive-open-modal').style.display === 'flex') { if (e.key === 'Escape') { closeGoogleDriveListModal(); } return; }
         const bcm = document.getElementById('block-context-menu');
         const ecm = document.getElementById('edge-context-menu');
         if ((bcm && bcm.style.display !== 'none') || (ecm && ecm.style.display !== 'none')) {
@@ -3502,6 +4617,9 @@
             if (e.key === 'Escape') { selectedNodes = []; requestRender(); return; }
             return;
         }
+
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
 
         if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); openNodeModal(currentWorldMouse); return; }
         if (e.key === 'Enter' && !e.shiftKey && selectedNodes.length === 1 && !["area", "marker", "image"].includes(selectedNodes[0].type)) { e.preventDefault(); openNodeModal(null, selectedNodes[0]); return; }
